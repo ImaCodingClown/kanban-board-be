@@ -1,6 +1,7 @@
-use std::{env, net::TcpListener};
+use std::env;
 
-use axum::{routing::get, Router};
+use axum::Router;
+use tower_http::{self, cors::{Any, CorsLayer}};
 use config::AppState;
 use dotenvy::dotenv;
 use routes::{auth, board};
@@ -82,8 +83,13 @@ async fn main() -> std::io::Result<()> {
 }
 
 pub fn create_app(state: AppState) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
     Router::new()
         .merge(auth::routes())
         .merge(board::routes())
+        .layer(cors)
         .with_state(state)
 }

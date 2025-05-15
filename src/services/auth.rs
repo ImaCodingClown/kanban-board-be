@@ -1,7 +1,7 @@
 use crate::models::users::User;
 use crate::utils::jwt::create_jwt;
 use bcrypt::{hash, verify};
-use mongodb::{bson::doc, Client, Collection, Database};
+use mongodb::{bson::doc, Client, Collection};
 
 pub async fn signup(
     email: String,
@@ -9,7 +9,9 @@ pub async fn signup(
     db: &Client,
     secret: &str,
 ) -> Result<String, String> {
-    let users: Collection<User> = db.database("Kanban").collection("users");
+    let users: Collection<User> = db.database("general").collection("users");
+
+    println!("{}", email.as_str());
 
     if users
         .find_one(doc! { "email": &email })
@@ -37,7 +39,7 @@ pub async fn login(
     db: &Client,
     secret: &str,
 ) -> Result<String, String> {
-    let users: Collection<User> = db.database("Kanban").collection("users");
+    let users: Collection<User> = db.database("general").collection("users");
 
     if let Some(user) = users.find_one(doc! { "email": &email }).await.unwrap() {
         if verify(password, &user.password_hash).unwrap() {
