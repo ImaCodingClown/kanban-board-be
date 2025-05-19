@@ -7,4 +7,3 @@ pub async fn db_client(uri: &str) -> Arc<Client> {
         .expect("Failed to connect to MongoDB");
     Arc::new(client)
 }
-

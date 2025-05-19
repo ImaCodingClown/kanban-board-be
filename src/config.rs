@@ -1,9 +1,22 @@
 use std::sync::Arc;
 
 use mongodb::Client;
+use serde::Deserialize;
+use serde::Serialize;
+use std::str::FromStr;
+use strum_macros::EnumString;
+
+#[derive(Serialize, Deserialize, Debug, Clone, EnumString)]
+#[strum(serialize_all = "UPPERCASE")]
+pub enum Environment {
+    DEV,
+    PROD,
+    TEST,
+}
 
 #[derive(Debug, Clone)]
 pub struct AppState {
+    pub environment: Environment,
     pub db: Arc<Client>,
     pub jwt_secret: String,
 }

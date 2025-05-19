@@ -1,11 +1,15 @@
 use std::env;
+use std::str::FromStr;
 
 use axum::Router;
-use tower_http::{self, cors::{Any, CorsLayer}};
-use config::AppState;
+use config::{AppState, Environment};
 use dotenvy::dotenv;
 use routes::{auth, board};
 use serde::{Deserialize, Serialize};
+use tower_http::{
+    self,
+    cors::{Any, CorsLayer},
+};
 use uuid::Uuid;
 
 mod config;
@@ -39,6 +43,10 @@ async fn get_board() -> Result<Vec<Column>, String> {
                 Card {
                     id: Uuid::new_v4(),
                     title: "Learn Rust".to_string(),
+                    // Description
+                    // Assignee
+                    // Story Point (Complexity)
+                    // Priority
                 },
                 Card {
                     id: Uuid::new_v4(),
@@ -66,11 +74,20 @@ async fn get_board() -> Result<Vec<Column>, String> {
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
-    let db_uri = env::var("MONGO_URI").expect("MongoURI not set");
+    let environment = Environment::from_str(&env::var("ENV").unwrap_or("DEV".to_string()))
+        .unwrap_or(Environment::DEV);
+    let db_uri = match environment {
+        Environment::TEST => "".to_string(),
+        _ => env::var("MONGO_URI").expect("MongoURI not set")
+    };
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET not set");
 
     let db = db::mongo::db_client(&db_uri).await;
-    let state = AppState { db, jwt_secret };
+    let state = AppState {
+        environment,
+        db,
+        jwt_secret,
+    };
     let app = create_app(state);
 
     println!("Server running at http://127.0.0.1:8080");
