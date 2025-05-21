@@ -35,6 +35,7 @@ struct Column {
 
 // API Handler
 async fn get_board() -> Result<Vec<Column>, String> {
+    // call get_board -> Look Up mongo collection -> Fetch appropriate Cards
     let board = vec![
         Column {
             id: Uuid::new_v4(),
@@ -78,7 +79,7 @@ async fn main() -> std::io::Result<()> {
         .unwrap_or(Environment::DEV);
     let db_uri = match environment {
         Environment::TEST => "".to_string(),
-        _ => env::var("MONGO_URI").expect("MongoURI not set")
+        _ => env::var("MONGO_URI").expect("MongoURI not set"),
     };
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET not set");
 

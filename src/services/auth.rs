@@ -49,3 +49,5 @@ pub async fn login(
 
     Err("Invalid credentials".into())
 }
+
+//TODO: Verify if valid session
