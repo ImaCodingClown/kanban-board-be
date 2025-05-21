@@ -19,7 +19,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           rust-version: stable
-          components; rustfmt, clippy
+          components: rustfmt, clippy
 
       - name: Cache cargo registry
         uses: actions/cache@v3
