@@ -1,16 +1,21 @@
-use axum::routing::get;
-use axum::{Json, Router};
-
+use axum::{routing::get, Json, Router};
 use crate::config::AppState;
-use crate::get_board;
+use crate::services::board::get_board;
+use crate::models::cards::Column;
 
 pub fn routes() -> Router<AppState> {
     Router::new().route("/board", get(handle_get_board))
 }
 
-async fn handle_get_board() -> Json<serde_json::Value> {
+
+async fn handle_get_board() -> Json<Vec<Column>> {
     match get_board().await {
-        Ok(token) => Json(serde_json::json!({ "board": token })),
-        Err(e) => Json(serde_json::json!({ "error": e })),
+        Ok(columns) => (StatusCode::OK, Json(columns)).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e })),
+        )
+            .into_response(),
     }
 }
+

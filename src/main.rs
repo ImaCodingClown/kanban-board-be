@@ -20,54 +20,54 @@ mod services;
 mod utils;
 
 // Models
-#[derive(Serialize, Deserialize)]
-struct Card {
-    id: Uuid,
-    title: String,
-}
+// #[derive(Serialize, Deserialize)]
+// struct Card {
+//     id: Uuid,
+//     title: String,
+// }
 
-#[derive(Serialize, Deserialize)]
-struct Column {
-    id: Uuid,
-    title: String,
-    cards: Vec<Card>,
-}
+// #[derive(Serialize, Deserialize)]
+// struct Column {
+//     id: Uuid,
+//     title: String,
+//     cards: Vec<Card>,
+// }
 
 // API Handler
-async fn get_board() -> Result<Vec<Column>, String> {
-    let board = vec![
-        Column {
-            id: Uuid::new_v4(),
-            title: "To Do".to_string(),
-            cards: vec![
-                Card {
-                    id: Uuid::new_v4(),
-                    title: "Learn Rust".to_string(),
-                    // Description
-                    // Assignee
-                    // Story Point (Complexity)
-                    // Priority
-                },
-                Card {
-                    id: Uuid::new_v4(),
-                    title: "Build a Kanban app".to_string(),
-                },
-            ],
-        },
-        Column {
-            id: Uuid::new_v4(),
-            title: "In Progress".to_string(),
-            cards: vec![],
-        },
-        Column {
-            id: Uuid::new_v4(),
-            title: "Done".to_string(),
-            cards: vec![],
-        },
-    ];
+// async fn get_board() -> Result<Vec<Column>, String> {
+//     let board = vec![
+//         Column {
+//             id: Uuid::new_v4(),
+//             title: "To Do".to_string(),
+//             cards: vec![
+//                 Card {
+//                     id: Uuid::new_v4(),
+//                     title: "Learn Rust".to_string(),
+//                     // Description
+//                     // Assignee
+//                     // Story Point (Complexity)
+//                     // Priority
+//                 },
+//                 Card {
+//                     id: Uuid::new_v4(),
+//                     title: "Build a Kanban app".to_string(),
+//                 },
+//             ],
+//         },
+//         Column {
+//             id: Uuid::new_v4(),
+//             title: "In Progress".to_string(),
+//             cards: vec![],
+//         },
+//         Column {
+//             id: Uuid::new_v4(),
+//             title: "Done".to_string(),
+//             cards: vec![],
+//         },
+//     ];
 
-    Ok(board)
-}
+//     Ok(board)
+// }
 
 // Main
 #[tokio::main]
