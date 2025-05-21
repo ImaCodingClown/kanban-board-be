@@ -8,9 +8,9 @@ use strum_macros::EnumString;
 #[derive(Serialize, Deserialize, Debug, Clone, EnumString)]
 #[strum(serialize_all = "UPPERCASE")]
 pub enum Environment {
-    DEV,
-    PROD,
-    TEST,
+    Dev,
+    Prod,
+    Test,
 }
 
 #[derive(Debug, Clone)]
