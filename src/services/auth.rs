@@ -99,7 +99,7 @@ mod tests {
 
         assert!(result.is_ok(), "signup failed: {:?}", result);
 
-        // check that user was inserted with correct username
+        // check username
         let inserted_user = users
             .find_one(doc! { "username": test_username })
             .await
