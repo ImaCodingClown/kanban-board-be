@@ -6,6 +6,7 @@ use crate::get_board;
 
 pub fn routes() -> Router<AppState> {
     Router::new().route("/board", get(handle_get_board))
+    //http://mydomain.com/board
 }
 
 async fn handle_get_board() -> Json<serde_json::Value> {
