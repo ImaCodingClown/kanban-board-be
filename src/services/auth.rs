@@ -67,18 +67,17 @@ pub async fn login(
     Err("Invalid credentials".into())
 }
 
-
 // Test username
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mongodb::{options::ClientOptions, Client};
     use dotenvy::dotenv;
+    use mongodb::{options::ClientOptions, Client};
     use std::env;
 
     #[tokio::test]
     async fn test_username() {
-        dotenv().ok(); 
+        dotenv().ok();
         let mongo_uri = env::var("MONGO_URI").unwrap_or("mongodb://localhost:27017".to_string());
 
         let client_options = ClientOptions::parse(&mongo_uri).await.unwrap();
@@ -96,7 +95,8 @@ mod tests {
             "testpw123".to_string(),
             &client,
             "test_secret",
-        ).await;
+        )
+        .await;
 
         assert!(result.is_ok(), "signup failed: {:?}", result);
 
