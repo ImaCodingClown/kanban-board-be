@@ -106,7 +106,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(inserted_user.is_some(), "insert failed: {:?}", inserted_user);
+        assert!(inserted_user.is_some(), "Failed: {:?}", inserted_user);
         assert_eq!(inserted_user.unwrap().email, test_email);
     }
 }
