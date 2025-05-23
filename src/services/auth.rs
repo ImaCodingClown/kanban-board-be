@@ -18,6 +18,7 @@ pub async fn signup(
         .find_one(doc! { "$or": [{"username": &username}, {"email": &email}] })
         .await
         .map_err(|_| "Error fetching username/email.".to_string())?
+        .is_some()
     {
         return Err("Username already in use.".into());
     }
