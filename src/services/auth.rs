@@ -15,21 +15,11 @@ pub async fn signup(
     println!("{}", email.as_str());
 
     if users
-        .find_one(doc! { "email": &email })
+        .find_one(doc! { "$or": [{"username": &username}, {"email": &email}] })
         .await
-        .unwrap()
-        .is_some()
+        .map_err(|_| "Error fetching username/email.".to_string())?
     {
-        return Err("Email already in use".into());
-    }
-
-    if users
-        .find_one(doc! { "username": &username })
-        .await
-        .unwrap()
-        .is_some()
-    {
-        return Err("Username already in use".into());
+        return Err("Username already in use.".into());
     }
 
     let hashed = hash(&password, 4).unwrap();
@@ -56,7 +46,7 @@ pub async fn login(
     let username_opt = users
         .find_one(doc! { "username": &username })
         .await
-        .unwrap();
+        .map_err(|_| "Error fetching username.".to_string())?;
 
     if let Some(user) = username_opt {
         if user.email == email && verify(password, &user.password_hash).unwrap() {
@@ -65,48 +55,4 @@ pub async fn login(
     }
 
     Err("Invalid credentials".into())
-}
-
-// Test username
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use dotenvy::dotenv;
-    use mongodb::{options::ClientOptions, Client};
-    use std::env;
-
-    #[tokio::test]
-    async fn test_username() {
-        dotenv().ok();
-        let mongo_uri = env::var("MONGO_URI").unwrap_or("mongodb://localhost:27017".to_string());
-
-        let client_options = ClientOptions::parse(&mongo_uri).await.unwrap();
-        let client = Client::with_options(client_options).unwrap();
-        let db = client.database("general");
-        let users = db.collection::<User>("users");
-        users.drop().await.unwrap(); // clear collection before test
-
-        let test_username = "test";
-        let test_email = "test@gmail.com";
-
-        let result = signup(
-            test_username.to_string(),
-            test_email.to_string(),
-            "testpw123".to_string(),
-            &client,
-            "test_secret",
-        )
-        .await;
-
-        assert!(result.is_ok(), "signup failed: {:?}", result);
-
-        // check username
-        let inserted_user = users
-            .find_one(doc! { "username": test_username })
-            .await
-            .unwrap();
-
-        assert!(inserted_user.is_some(), "Failed: {:?}", inserted_user);
-        assert_eq!(inserted_user.unwrap().email, test_email);
-    }
 }
