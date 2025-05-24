@@ -1,8 +1,8 @@
-use std::env;
 use dotenvy::dotenv;
-use mongodb::{bson::doc, options::ClientOptions, Client};
 use kanban_backend::models::users::User;
 use kanban_backend::services::auth::signup;
+use mongodb::{bson::doc, options::ClientOptions, Client};
+use std::env;
 
 #[tokio::test]
 async fn test_username() {
