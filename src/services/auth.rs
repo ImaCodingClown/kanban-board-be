@@ -20,7 +20,7 @@ pub async fn signup(
         .map_err(|_| "Error fetching username/email.".to_string())?
         .is_some()
     {
-        return Err("Username already in use.".into());
+        return Err("Username/email already in use.".into());
     }
 
     let hashed = hash(&password, 4).unwrap();
