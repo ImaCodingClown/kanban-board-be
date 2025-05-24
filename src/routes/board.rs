@@ -4,6 +4,7 @@ use crate::services::board::get_board;
 
 pub fn routes() -> Router<AppState> {
     Router::new().route("/board", get(handle_get_board))
+    //http://mydomain.com/board
 }
 
 // Changed return type from `Json<Vec<Column>>` to `impl IntoResponse`
