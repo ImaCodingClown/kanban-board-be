@@ -15,6 +15,7 @@ async fn handle_signup(
     Json(payload): Json<AuthPayload>,
 ) -> Json<serde_json::Value> {
     match signup(
+        payload.username,
         payload.email,
         payload.password,
         &state.db,
@@ -32,6 +33,7 @@ async fn handle_login(
     Json(payload): Json<AuthPayload>,
 ) -> Json<serde_json::Value> {
     match login(
+        payload.username,
         payload.email,
         payload.password,
         &state.db,

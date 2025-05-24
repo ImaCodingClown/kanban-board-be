@@ -8,6 +8,7 @@ pub struct Claims {
 
 #[derive(Deserialize)]
 pub struct AuthPayload {
+    pub username: String,
     pub email: String,
     pub password: String,
 }
