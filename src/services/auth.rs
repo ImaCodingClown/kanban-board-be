@@ -41,7 +41,7 @@ pub async fn login(
     db: &Client,
     secret: &str,
 ) -> Result<String, String> {
-    let users: Collection<User> = db.database("general").collection("users"); 
+    let users: Collection<User> = db.database("general").collection("users");
 
     let user_opt = users
         .find_one(doc! { "$or": [{ "username": &user_or_email }, { "email": &user_or_email }]})

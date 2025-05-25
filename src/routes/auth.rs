@@ -1,8 +1,8 @@
 use axum::{routing::post, Json, Router};
 
 use crate::config::AppState;
-use crate::models::auth::AuthPayload;
 use crate::models::auth::AuthLoginPayload;
+use crate::models::auth::AuthPayload;
 use crate::services::auth::{login, signup};
 
 pub fn routes() -> Router<AppState> {
