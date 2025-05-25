@@ -12,3 +12,10 @@ pub struct AuthPayload {
     pub email: String,
     pub password: String,
 }
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthLoginPayload {
+    pub user_or_email: String,
+    pub password: String,
+}

@@ -36,21 +36,20 @@ pub async fn signup(
 }
 
 pub async fn login(
-    username: String,
-    email: String,
+    user_or_email: String,
     password: String,
     db: &Client,
     secret: &str,
 ) -> Result<String, String> {
-    let users: Collection<User> = db.database("general").collection("users");
+    let users: Collection<User> = db.database("general").collection("users"); 
 
-    let username_opt = users
-        .find_one(doc! { "username": &username })
+    let user_opt = users
+        .find_one(doc! { "$or": [{ "username": &user_or_email }, { "email": &user_or_email }]})
         .await
-        .map_err(|_| "Error fetching username.".to_string())?;
+        .map_err(|_| "Error fetching user info.".to_string())?;
 
-    if let Some(user) = username_opt {
-        if user.email == email && verify(password, &user.password_hash).unwrap() {
+    if let Some(user) = user_opt {
+        if verify(password, &user.password_hash).unwrap() {
             return Ok(create_jwt(&user.email, secret));
         }
     }

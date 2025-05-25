@@ -2,6 +2,7 @@ use axum::{routing::post, Json, Router};
 
 use crate::config::AppState;
 use crate::models::auth::AuthPayload;
+use crate::models::auth::AuthLoginPayload;
 use crate::services::auth::{login, signup};
 
 pub fn routes() -> Router<AppState> {
@@ -30,11 +31,10 @@ async fn handle_signup(
 
 async fn handle_login(
     state: axum::extract::State<AppState>,
-    Json(payload): Json<AuthPayload>,
+    Json(payload): Json<AuthLoginPayload>,
 ) -> Json<serde_json::Value> {
     match login(
-        payload.username,
-        payload.email,
+        payload.user_or_email,
         payload.password,
         &state.db,
         &state.jwt_secret,
