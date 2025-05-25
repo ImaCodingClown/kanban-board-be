@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Card {
     pub id: Uuid,
     pub title: String,
@@ -11,7 +11,7 @@ pub struct Card {
     pub priority: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Column {
     pub id: Uuid,
     pub title: String,
