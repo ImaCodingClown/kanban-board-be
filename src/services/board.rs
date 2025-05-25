@@ -18,7 +18,9 @@ pub async fn get_board() -> Result<Vec<Column>, String> {
                 Card {
                     id: Uuid::new_v4(),
                     title: "Build a Kanban app".to_string(),
-                    description: Some("Prototype Kanban layout and basic functionality".to_string()),
+                    description: Some(
+                        "Prototype Kanban layout and basic functionality".to_string(),
+                    ),
                     assignee: Some("Bob".to_string()),
                     story_point: Some(5),
                     priority: Some("Medium".to_string()),

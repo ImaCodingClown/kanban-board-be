@@ -1,6 +1,6 @@
-use axum::{routing::get, Json, Router, response::IntoResponse, http::StatusCode};
 use crate::config::AppState;
 use crate::services::board::get_board;
+use axum::{http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 
 pub fn routes() -> Router<AppState> {
     Router::new().route("/board", get(handle_get_board))
