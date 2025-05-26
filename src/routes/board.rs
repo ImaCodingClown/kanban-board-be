@@ -1,17 +1,24 @@
-use axum::routing::get;
-use axum::{Json, Router};
-
 use crate::config::AppState;
-use crate::get_board;
+use crate::services::board::get_board;
+use axum::{http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 
 pub fn routes() -> Router<AppState> {
     Router::new().route("/board", get(handle_get_board))
     //http://mydomain.com/board
 }
 
-async fn handle_get_board() -> Json<serde_json::Value> {
+// Changed return type from `Json<Vec<Column>>` to `impl IntoResponse`
+// because we're returning a full HTTP response (status + JSON).
+async fn handle_get_board() -> impl IntoResponse {
     match get_board().await {
-        Ok(token) => Json(serde_json::json!({ "board": token })),
-        Err(e) => Json(serde_json::json!({ "error": e })),
+        // Returns (StatusCode, Json) tuple converted into an HTTP response
+        Ok(columns) => (StatusCode::OK, Json(columns)).into_response(),
+
+        // Returns 500 error with JSON error message
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e })),
+        )
+            .into_response(),
     }
 }

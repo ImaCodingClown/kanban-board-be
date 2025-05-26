@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use mongodb::Client;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use strum_macros::EnumString;
 
 #[derive(Serialize, Deserialize, Debug, Clone, EnumString)]
