@@ -4,7 +4,7 @@ use std::str::FromStr;
 use axum::Router;
 use config::{AppState, Environment};
 use dotenvy::dotenv;
-use routes::{auth, board};
+use routes::{auth, board, health};
 use tower_http::cors::{Any, CorsLayer};
 
 mod config;
@@ -14,7 +14,6 @@ mod routes;
 mod services;
 mod utils;
 
-// Main
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -52,6 +51,7 @@ pub fn create_app(state: AppState) -> Router {
     Router::new()
         .merge(auth::routes())
         .merge(board::routes())
+        .merge(health::routes())
         .layer(cors)
         .with_state(state)
 }
