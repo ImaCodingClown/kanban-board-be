@@ -1,10 +1,13 @@
 use crate::models::auth::Claims;
+use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 
 pub fn create_jwt(user_id: &str, secret: &str) -> String {
+    let expiration = (Utc::now() + Duration::days(7)).timestamp() as usize;
+
     let claims = Claims {
         sub: user_id.to_owned(),
-        exp: 200000,
+        exp: expiration,
     };
     encode(
         &Header::default(),
