@@ -8,8 +8,8 @@ use http_body_util::BodyExt;
 use kanban_backend::{
     config::{AppState, Environment},
     models::users::User,
-    services::auth::signup,
     routes::auth,
+    services::auth::signup,
 };
 use mongodb::{bson::doc, options::ClientOptions, Client};
 use std::env;
@@ -100,9 +100,8 @@ async fn test_me_endpoint() {
     };
 
     let app = Router::new()
-    .nest("/api/auth", auth::routes())
-    .with_state(state);
-
+        .nest("/api/auth", auth::routes())
+        .with_state(state);
 
     let request = Request::builder()
         .uri("/api/auth/me")
