@@ -1,3 +1,7 @@
+use axum::{
+    body::Body,
+    http::{Request, StatusCode},
+};
 use dotenvy::dotenv;
 use kanban_backend::{
     config::AppState,
@@ -8,10 +12,6 @@ use kanban_backend::{
 };
 use mongodb::{bson::doc, options::ClientOptions, Client};
 use std::env;
-use axum::{
-    body::Body,
-    http::{Request, StatusCode},
-};
 use tower::ServiceExt;
 
 #[tokio::test]
@@ -68,9 +68,7 @@ async fn test_me_endpoint() {
         jwt_secret,
     };
 
-    let app = auth_routes()
-        .merge(user_routes())
-        .with_state(state);
+    let app = auth_routes().merge(user_routes()).with_state(state);
 
     let request = Request::builder()
         .uri("/me")

@@ -1,9 +1,13 @@
-use axum::{extract::State, routing::{post, get}, Json, Router};
 use crate::config::AppState;
 use crate::models::auth::{AuthLoginPayload, AuthPayload};
 use crate::services::auth::{login, signup};
 use crate::services::users::get_user_by_id;
 use crate::utils::jwt::AuthBearer;
+use axum::{
+    extract::State,
+    routing::{get, post},
+    Json, Router,
+};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -14,7 +18,7 @@ pub fn routes() -> Router<AppState> {
 
 async fn handle_get_me(
     State(state): State<AppState>,
-    AuthBearer(user_id): AuthBearer, 
+    AuthBearer(user_id): AuthBearer,
 ) -> Json<serde_json::Value> {
     match get_user_by_id(&state.db.database("general"), &user_id).await {
         Ok(user) => Json(serde_json::json!({

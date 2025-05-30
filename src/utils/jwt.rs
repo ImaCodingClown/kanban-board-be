@@ -1,14 +1,13 @@
+use crate::models::auth::Claims;
 use axum::extract::FromRequestParts;
 use axum::http::{request::Parts, StatusCode};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use chrono::{Duration, Utc};
-use crate::models::auth::Claims;
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 
 pub fn create_jwt(user_id: &str, secret: &str) -> String {
     let claims = Claims {
         sub: user_id.to_owned(),
         exp: (Utc::now() + Duration::hours(1)).timestamp() as usize,
-
     };
     encode(
         &Header::default(),
@@ -29,7 +28,8 @@ where
     fn from_request_parts<'a>(
         parts: &'a mut Parts,
         _state: &S,
-    ) -> impl std::future::Future<Output = Result<Self, <Self as FromRequestParts<S>>::Rejection>> + Send {
+    ) -> impl std::future::Future<Output = Result<Self, <Self as FromRequestParts<S>>::Rejection>> + Send
+    {
         Box::pin(async move {
             let auth_header = parts
                 .headers

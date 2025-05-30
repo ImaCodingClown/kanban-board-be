@@ -1,5 +1,8 @@
 use crate::models::users::User;
-use mongodb::{bson::{doc, oid::ObjectId}, Database};
+use mongodb::{
+    bson::{doc, oid::ObjectId},
+    Database,
+};
 
 pub async fn get_user_by_id(db: &Database, user_id: &str) -> Result<User, String> {
     let users = db.collection::<User>("users");
