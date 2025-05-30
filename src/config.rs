@@ -13,6 +13,7 @@ pub enum Environment {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct AppState {
     pub environment: Environment,
     pub db: Arc<Client>,
