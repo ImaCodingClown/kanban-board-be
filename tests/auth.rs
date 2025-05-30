@@ -4,14 +4,15 @@ use axum::{
 };
 use dotenvy::dotenv;
 use kanban_backend::{
-    config::AppState,
+    config::{AppState, Environment},
     models::users::User,
-    routes::{auth::auth_routes, users::user_routes},
+    routes::auth::routes as auth_routes,
     services::auth::signup,
     utils::jwt::create_jwt,
 };
 use mongodb::{bson::doc, options::ClientOptions, Client};
 use std::env;
+use std::sync::Arc;
 use tower::ServiceExt;
 
 #[tokio::test]
@@ -56,19 +57,19 @@ async fn test_me_endpoint() {
     let jwt_secret = env::var("JWT_SECRET").unwrap_or("test_secret".to_string());
 
     let client_options = ClientOptions::parse(&mongo_uri).await.unwrap();
-    let client = Client::with_options(client_options).unwrap();
-    let db = client.database("general");
+    let client = Arc::new(Client::with_options(client_options).unwrap());
+    let _db = client.database("general");
 
     let user_id = "68339cdbb0ea56d83356e547"; // Example ObjectId, replace with a valid one from your test database
     let token = create_jwt(user_id, &jwt_secret);
 
     let state = AppState {
-        environment: kanban_backend::config::Environment::Dev,
-        db: client,
+        environment: Environment::Dev,
+        db: client.clone(),
         jwt_secret,
     };
 
-    let app = auth_routes().merge(user_routes()).with_state(state);
+    let app = auth_routes().with_state(state);
 
     let request = Request::builder()
         .uri("/me")

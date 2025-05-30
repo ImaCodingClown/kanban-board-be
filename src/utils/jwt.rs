@@ -3,6 +3,7 @@ use axum::extract::FromRequestParts;
 use axum::http::{request::Parts, StatusCode};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use std::future::Future;
 
 pub fn create_jwt(user_id: &str, secret: &str) -> String {
     let claims = Claims {
@@ -25,11 +26,10 @@ where
 {
     type Rejection = (StatusCode, String);
 
-    fn from_request_parts<'a>(
-        parts: &'a mut Parts,
+    fn from_request_parts(
+        parts: &mut Parts,
         _state: &S,
-    ) -> impl std::future::Future<Output = Result<Self, <Self as FromRequestParts<S>>::Rejection>> + Send
-    {
+    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
         Box::pin(async move {
             let auth_header = parts
                 .headers
