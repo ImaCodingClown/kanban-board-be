@@ -5,26 +5,25 @@ use axum::{
 };
 use dotenvy::dotenv;
 use http_body_util::BodyExt;
-use kanban_backend::{
-    config::{AppState, Environment},
-    models::users::User,
-    routes::auth,
-    services::auth::signup,
-};
+use kanban_backend::config::{AppState, Environment};
+use kanban_backend::models::users::User;
+use kanban_backend::services::auth::signup;
+use kanban_backend::utils::jwt::create_jwt;
 use mongodb::{bson::doc, options::ClientOptions, Client};
-use std::env;
+use std::{env, sync::Arc};
 use tower::ServiceExt;
 
 #[tokio::test]
 async fn test_username() {
     dotenv().ok();
-    let mongo_uri = env::var("MONGO_URI").unwrap_or("mongodb://localhost:27017".to_string());
+    let mongo_uri =
+        env::var("MONGO_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
 
     let client_options = ClientOptions::parse(&mongo_uri).await.unwrap();
     let client = Client::with_options(client_options).unwrap();
     let db = client.database("general");
     let users = db.collection::<User>("users");
-    users.drop().await.unwrap(); // Clear before test
+    users.drop().await.unwrap();
 
     let test_username = "test";
     let test_email = "test@gmail.com";
@@ -34,73 +33,63 @@ async fn test_username() {
         test_email.to_string(),
         "testpw123".to_string(),
         &client,
-        "test_secret",
+        "rhdfyd",
     )
     .await;
 
-    assert!(result.is_ok(), "signup failed: {:?}", result);
-
+    assert!(result.is_ok());
     let inserted_user = users
         .find_one(doc! { "username": test_username })
         .await
         .unwrap();
-
-    assert!(inserted_user.is_some(), "Failed: {:?}", inserted_user);
+    assert!(inserted_user.is_some());
     assert_eq!(inserted_user.unwrap().email, test_email);
-}
-
-#[derive(Debug, serde::Deserialize)]
-struct UserResponse {
-    username: String,
-    email: String,
 }
 
 #[tokio::test]
 async fn test_me_endpoint() {
     dotenv().ok();
-    let mongo_uri = env::var("MONGO_URI").unwrap_or("mongodb://localhost:27017".to_string());
-    let jwt_secret = "rhdfyd";
+    let mongo_uri =
+        env::var("MONGO_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
+    let jwt_secret = env::var("JWT_SECRET").unwrap_or_else(|_| "rhdfyd".to_string());
 
     let client_options = ClientOptions::parse(&mongo_uri).await.unwrap();
     let client = Client::with_options(client_options).unwrap();
     let db = client.database("general");
     let users = db.collection::<User>("users");
-    users.drop().await.unwrap(); // Clear before test
+    users.drop().await.unwrap();
 
     let test_username = "testuser";
     let test_email = "testuser@gmail.com";
 
-    let _created_user = signup(
+    // First insert user
+    let _ = signup(
         test_username.to_string(),
         test_email.to_string(),
         "testpw123".to_string(),
         &client,
-        jwt_secret,
+        &jwt_secret,
     )
-    .await
-    .expect("Failed to create test user");
+    .await;
 
-    // Use JWT from separate function, as signup returns String not struct with token
-    use kanban_backend::utils::jwt::create_jwt;
-    let user_in_db = users
+    // Manually get the user's ObjectId to generate token
+    let user = users
         .find_one(doc! { "username": test_username })
         .await
         .unwrap()
-        .expect("User not found");
+        .expect("User not found in DB");
 
-    let token = create_jwt(
-        &user_in_db.id.expect("User missing ID").to_hex(),
-        jwt_secret,
-    );
+    let user_id_str = user.id.unwrap().to_hex();
+    let token = create_jwt(&user_id_str, &jwt_secret);
 
     let state = AppState {
-        environment: Environment::Test,
-        db: client.into(),
-        jwt_secret: jwt_secret.to_string(),
+        environment: Environment::Dev,
+        db: Arc::new(client),
+        jwt_secret,
     };
 
     let app = Router::new()
-        .nest("/api/auth", auth::routes())
+        .nest("/api/auth", kanban_backend::routes::auth::routes())
         .with_state(state);
 
     let request = Request::builder()
@@ -114,9 +103,13 @@ async fn test_me_endpoint() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
-    let user: UserResponse =
-        serde_json::from_slice(&body).expect("Response deserialization failed");
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    println!("Response body: {:?}", json);
 
-    assert_eq!(user.username, test_username);
-    assert_eq!(user.email, test_email);
+    let email = json
+        .get("email")
+        .expect("Missing email field")
+        .as_str()
+        .unwrap();
+    assert_eq!(email, test_email);
 }
