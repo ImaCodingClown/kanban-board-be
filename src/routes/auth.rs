@@ -8,12 +8,13 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use serde_json::json;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/me", get(handle_get_me))
         .route("/signup", post(handle_signup))
         .route("/login", post(handle_login))
+        .route("/me", get(handle_get_me))
 }
 
 async fn handle_get_me(
@@ -21,12 +22,12 @@ async fn handle_get_me(
     AuthBearer(user_id): AuthBearer,
 ) -> Json<serde_json::Value> {
     match get_user_by_id(&state.db.database("general"), &user_id).await {
-        Ok(user) => Json(serde_json::json!({
+        Ok(user) => Json(json!({
             "id": user.id,
             "username": user.username,
             "email": user.email,
         })),
-        Err(_) => Json(serde_json::json!({ "error": "User not found" })),
+        Err(_) => Json(json!({ "error": "User not found" })),
     }
 }
 
@@ -43,8 +44,8 @@ async fn handle_signup(
     )
     .await
     {
-        Ok(token) => Json(serde_json::json!({ "token": token })),
-        Err(e) => Json(serde_json::json!({ "error": e })),
+        Ok(token) => Json(json!({ "token": token })),
+        Err(e) => Json(json!({ "error": e })),
     }
 }
 
@@ -60,7 +61,7 @@ async fn handle_login(
     )
     .await
     {
-        Ok(token) => Json(serde_json::json!({ "token": token })),
-        Err(e) => Json(serde_json::json!({ "error": e })),
+        Ok(token) => Json(json!({ "token": token })),
+        Err(e) => Json(json!({ "error": e })),
     }
 }

@@ -14,6 +14,20 @@ mod routes;
 mod services;
 mod utils;
 
+fn create_app(state: AppState) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    Router::new()
+        .merge(auth::routes())
+        .merge(board::routes())
+        .merge(health::routes())
+        .layer(cors)
+        .with_state(state)
+}
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -36,17 +50,4 @@ async fn main() -> std::io::Result<()> {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await?;
     axum::serve(listener, app.into_make_service()).await?;
     Ok(())
-}
-
-pub fn create_app(state: AppState) -> Router {
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
-    Router::new()
-        .merge(auth::routes())
-        .merge(board::routes())
-        .merge(health::routes())
-        .layer(cors)
-        .with_state(state)
 }

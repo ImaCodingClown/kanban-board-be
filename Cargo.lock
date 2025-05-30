@@ -1045,6 +1045,7 @@ dependencies = [
  "chrono",
  "dotenvy",
  "futures",
+ "http-body-util",
  "jsonwebtoken",
  "mongodb",
  "serde",
