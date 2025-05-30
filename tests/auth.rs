@@ -59,7 +59,7 @@ async fn test_me_endpoint() {
     let client = Client::with_options(client_options).unwrap();
     let db = client.database("general");
 
-    let user_id = "68339cdbb0ea56d83356e547" // Example ObjectId, replace with a valid one from your test database
+    let user_id = "68339cdbb0ea56d83356e547"; // Example ObjectId, replace with a valid one from your test database
     let token = create_jwt(user_id, &jwt_secret);
 
     let state = AppState {
