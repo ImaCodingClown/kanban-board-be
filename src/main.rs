@@ -14,16 +14,27 @@ mod routes;
 mod services;
 mod utils;
 
+fn create_app(state: AppState) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    Router::new()
+        .merge(auth::routes())
+        .merge(board::routes())
+        .merge(health::routes())
+        .layer(cors)
+        .with_state(state)
+}
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
     let environment = Environment::from_str(&env::var("ENV").unwrap_or("DEV".to_string()))
         .unwrap_or(Environment::Dev);
-    let db_uri = match environment {
-        Environment::Test => "".to_string(),
-        _ => env::var("MONGO_URI").expect("MongoURI not set"),
-    };
+    let db_uri = env::var("MONGO_URI").expect("MongoURI not set");
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET not set");
 
     let db = db::mongo::db_client(&db_uri).await;
@@ -36,22 +47,7 @@ async fn main() -> std::io::Result<()> {
 
     println!("Server running at http://127.0.0.1:8080");
 
-    let listener = tokio::net::TcpListener::bind(&"0.0.0.0:8080").await;
-    axum::serve(listener.unwrap(), app.into_make_service())
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await?;
+    axum::serve(listener, app.into_make_service()).await?;
     Ok(())
-}
-
-pub fn create_app(state: AppState) -> Router {
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
-    Router::new()
-        .merge(auth::routes())
-        .merge(board::routes())
-        .merge(health::routes())
-        .layer(cors)
-        .with_state(state)
 }
