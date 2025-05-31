@@ -8,6 +8,7 @@ use http_body_util::BodyExt;
 use kanban_backend::config::{AppState, Environment};
 use kanban_backend::models::users::User;
 use kanban_backend::services::auth::signup;
+use kanban_backend::routes::auth;
 use kanban_backend::utils::jwt::create_jwt;
 use mongodb::{bson::doc, options::ClientOptions, Client};
 use std::{env, sync::Arc};
@@ -49,9 +50,9 @@ async fn test_username() {
 #[tokio::test]
 async fn test_me_endpoint() {
     dotenv().ok();
-    let mongo_uri =
-        env::var("MONGO_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
-    let jwt_secret = env::var("JWT_SECRET").unwrap_or_else(|_| "rhdfyd".to_string());
+
+    let mongo_uri = env::var("MONGO_URI").expect("MONGO_URI must be set");
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
     let client_options = ClientOptions::parse(&mongo_uri).await.unwrap();
     let client = Client::with_options(client_options).unwrap();
@@ -88,12 +89,10 @@ async fn test_me_endpoint() {
         jwt_secret,
     };
 
-    let app = Router::new()
-        .nest("/api/auth", kanban_backend::routes::auth::routes())
-        .with_state(state);
+    let app = Router::new().merge(auth::routes()).with_state(state);
 
     let request = Request::builder()
-        .uri("/api/auth/me")
+        .uri("/me")
         .header("Authorization", format!("Bearer {}", token))
         .method("GET")
         .body(Body::empty())
