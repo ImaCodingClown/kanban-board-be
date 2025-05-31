@@ -17,8 +17,7 @@ use tower::ServiceExt;
 #[tokio::test]
 async fn test_username() {
     dotenv().ok();
-    let mongo_uri =
-        env::var("MONGO_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
+    let mongo_uri = env::var("MONGO_URI").expect("MONGO_URI must be set");
 
     let client_options = ClientOptions::parse(&mongo_uri).await.unwrap();
     let client = Client::with_options(client_options).unwrap();
@@ -34,7 +33,7 @@ async fn test_username() {
         test_email.to_string(),
         "testpw123".to_string(),
         &client,
-        "rhdfyd",
+        "test_secret",
     )
     .await;
 
@@ -63,7 +62,6 @@ async fn test_me_endpoint() {
     let test_username = "testuser";
     let test_email = "testuser@gmail.com";
 
-    // First insert user
     let _ = signup(
         test_username.to_string(),
         test_email.to_string(),
@@ -73,7 +71,6 @@ async fn test_me_endpoint() {
     )
     .await;
 
-    // Manually get the user's ObjectId to generate token
     let user = users
         .find_one(doc! { "username": test_username })
         .await
