@@ -17,6 +17,7 @@ dotenvy = "0.15.7"
 tower-http = { version = "0.6.2", features = ["cors"] }
 strum = "0.27.1"
 strum_macros = "0.27.1"
+async-trait = "0.1.88"
 chrono = "0.4.41"
 
 [lib]
