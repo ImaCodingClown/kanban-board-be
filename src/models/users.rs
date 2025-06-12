@@ -17,6 +17,7 @@ pub struct User {
     pub password_hash: String,
     pub group: Vec<String>,
     pub permissions: Vec<String>,
+    pub teams: Vec<String>
 }
 
 impl User {
@@ -28,6 +29,7 @@ impl User {
             password_hash,
             group: Vec::new(),
             permissions: Vec::new(),
+            teams: Vec::new(),
         }
     }
 }
