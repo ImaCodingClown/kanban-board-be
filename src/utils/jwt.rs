@@ -1,5 +1,4 @@
 use crate::models::auth::Claims;
-use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 
 pub struct JWTValidator {}
