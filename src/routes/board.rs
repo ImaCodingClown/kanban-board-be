@@ -4,11 +4,8 @@ use axum::{http::StatusCode, response::IntoResponse, routing::get, Json, Router}
 
 pub fn routes() -> Router<AppState> {
     Router::new().route("/board", get(handle_get_board))
-    //http://mydomain.com/board
 }
 
-// Changed return type from `Json<Vec<Column>>` to `impl IntoResponse`
-// because we're returning a full HTTP response (status + JSON).
 async fn handle_get_board() -> impl IntoResponse {
     match get_board().await {
         // Returns (StatusCode, Json) tuple converted into an HTTP response
