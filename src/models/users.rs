@@ -17,7 +17,7 @@ pub struct User {
     pub password_hash: String,
     pub group: Vec<String>,
     pub permissions: Vec<String>,
-    pub teams: Vec<String>
+    pub teams: Vec<String>,
 }
 
 impl User {
