@@ -20,6 +20,7 @@ strum_macros = "0.27.1"
 futures = "0.3"
 chrono = { version = "0.4.41", features = ["clock"] }
 http-body-util = "0.1"
+async-trait = "0.1.88"
 
 
 [lib]

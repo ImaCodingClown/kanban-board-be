@@ -1,3 +1,3 @@
 pub mod auth;
 pub mod board;
-pub mod users;
+pub mod user_info;
