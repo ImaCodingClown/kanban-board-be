@@ -13,3 +13,4 @@ pub async fn get_user_by_id(db: &Database, user_id: &str) -> Result<User, String
         .map_err(|e| format!("DB error: {}", e))?
         .ok_or("User not found".to_string())
 }
+

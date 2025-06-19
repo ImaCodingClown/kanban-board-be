@@ -44,8 +44,8 @@ async fn handle_signup(
     )
     .await
     {
-        Ok(token) => Json(json!({ "token": token })),
-        Err(e) => Json(json!({ "error": e })),
+        Ok(token) => Json(serde_json::json!({ "token": token })),
+        Err(e) => Json(serde_json::json!({ "error": format!("{e}") })),
     }
 }
 
