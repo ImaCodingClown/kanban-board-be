@@ -1,6 +1,6 @@
 use crate::{
     db::mongo::{MongoService, ODM},
-    models::cards::{Board, Card, Column},
+    models::cards::Board,
     utils::errors::CustomError,
 };
 use mongodb::Client;

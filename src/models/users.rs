@@ -1,10 +1,5 @@
-use async_trait::async_trait;
-use mongodb::{
-    bson::{doc, oid::ObjectId, Document},
-    Client, Collection,
-};
+use mongodb::bson::{doc, oid::ObjectId, Document};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 
 use crate::{
     db::mongo::{MongoModel, MongoService, ODM},
