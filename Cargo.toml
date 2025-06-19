@@ -19,6 +19,7 @@ strum = "0.27.1"
 strum_macros = "0.27.1"
 async-trait = "0.1.88"
 chrono = "0.4.41"
+serde_with = "3.13.0"
 
 [lib]
 path = "src/lib.rs"

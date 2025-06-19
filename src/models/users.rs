@@ -6,7 +6,10 @@ use mongodb::{
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::db::mongo::{MongoModel, MongoService, ODM};
+use crate::{
+    db::mongo::{MongoModel, MongoService, ODM},
+    impl_mongo,
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
@@ -39,18 +42,4 @@ impl MongoModel for User {
         doc! { "username": &self.username, "email": &self.email }
     }
 }
-
-#[async_trait]
-impl MongoService<User> for ODM<User> {
-    const COLLECTION: &str = "users";
-    const DATABASE: &str = "general";
-
-    async fn build(client: &Client) -> Self {
-        let collection: Collection<User> =
-            client.database(Self::DATABASE).collection(Self::COLLECTION);
-        ODM::<User> {
-            client: Arc::new(client.clone()),
-            collection,
-        }
-    }
-}
+impl_mongo!(User, "users", "general");
