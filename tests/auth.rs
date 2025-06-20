@@ -7,9 +7,9 @@ use dotenvy::dotenv;
 use http_body_util::BodyExt;
 use kanban_backend::config::{AppState, Environment};
 use kanban_backend::models::users::User;
-use kanban_backend::routes::auth;
+use kanban_backend::routes::auth::routes as auth_routes; // <-- merge all auth routes, including GET /me
 use kanban_backend::services::auth::signup;
-use kanban_backend::utils::jwt::create_jwt;
+use kanban_backend::utils::jwt::{JWTMethods, JWTValidator};
 use mongodb::{bson::doc, options::ClientOptions, Client};
 use std::{env, sync::Arc};
 use tower::ServiceExt;
@@ -21,8 +21,7 @@ async fn test_username() {
 
     let client_options = ClientOptions::parse(&mongo_uri).await.unwrap();
     let client = Client::with_options(client_options).unwrap();
-    let db = client.database("general");
-    let users = db.collection::<User>("users");
+    let users = client.database("general").collection::<User>("users");
     users.drop().await.unwrap();
 
     let test_username = "test";
@@ -38,6 +37,7 @@ async fn test_username() {
     .await;
 
     assert!(result.is_ok());
+
     let inserted_user = users
         .find_one(doc! { "username": test_username })
         .await
@@ -53,15 +53,15 @@ async fn test_me_endpoint() {
     let mongo_uri = env::var("MONGO_URI").expect("MONGO_URI must be set");
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
+    // Setup Mongo client and clear users
     let client_options = ClientOptions::parse(&mongo_uri).await.unwrap();
     let client = Client::with_options(client_options).unwrap();
-    let db = client.database("general");
-    let users = db.collection::<User>("users");
+    let users = client.database("general").collection::<User>("users");
     users.drop().await.unwrap();
 
+    // Create a new user via the service
     let test_username = "testuser";
     let test_email = "testuser@gmail.com";
-
     let _ = signup(
         test_username.to_string(),
         test_email.to_string(),
@@ -71,23 +71,27 @@ async fn test_me_endpoint() {
     )
     .await;
 
+    // Load the inserted user to get their email
     let user = users
         .find_one(doc! { "username": test_username })
         .await
         .unwrap()
         .expect("User not found in DB");
 
-    let user_id_str = user.id.unwrap().to_hex();
-    let token = create_jwt(&user_id_str, &jwt_secret);
+    // Generate a JWT with the user's email in `sub`
+    let token = JWTValidator::create_jwt(&user.email, &jwt_secret);
 
+    // Build shared AppState (with database and secret)
     let state = AppState {
         environment: Environment::Dev,
         db: Arc::new(client),
         jwt_secret,
     };
 
-    let app = Router::new().merge(auth::routes()).with_state(state);
+    // Merge your auth routes (including GET /me) with that state
+    let app = Router::new().merge(auth_routes()).with_state(state);
 
+    // Perform GET /me with the Bearer token
     let request = Request::builder()
         .uri("/me")
         .header("Authorization", format!("Bearer {}", token))
@@ -96,16 +100,10 @@ async fn test_me_endpoint() {
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
+
+    // Assert we get 200 OK and the correct email back
     assert_eq!(response.status(), StatusCode::OK);
-
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    println!("Response body: {:?}", json);
-
-    let email = json
-        .get("email")
-        .expect("Missing email field")
-        .as_str()
-        .unwrap();
-    assert_eq!(email, test_email);
+    let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+    assert_eq!(json.get("email").unwrap().as_str().unwrap(), test_email);
 }

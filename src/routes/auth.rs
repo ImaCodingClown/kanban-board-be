@@ -1,7 +1,7 @@
 use crate::config::AppState;
 use crate::models::auth::{AuthLoginPayload, AuthPayload};
 use crate::services::auth::{login, signup};
-use crate::services::users::get_user_by_id;
+use crate::services::user_info::get_user_by_email;
 use crate::utils::jwt::AuthBearer;
 use axum::{
     extract::State,
@@ -17,17 +17,19 @@ pub fn routes() -> Router<AppState> {
         .route("/me", get(handle_get_me))
 }
 
-async fn handle_get_me(
+pub async fn handle_get_me(
     State(state): State<AppState>,
-    AuthBearer(user_id): AuthBearer,
+    AuthBearer(user_email): AuthBearer,
 ) -> Json<serde_json::Value> {
-    match get_user_by_id(&state.db.database("general"), &user_id).await {
-        Ok(user) => Json(json!({
+    let db = state.db.database("general");
+
+    match get_user_by_email(&db, &user_email).await {
+        Ok(user) => Json(serde_json::json!({
             "id": user.id,
             "username": user.username,
             "email": user.email,
         })),
-        Err(_) => Json(json!({ "error": "User not found" })),
+        Err(_) => Json(serde_json::json!({ "error": "User not found" })),
     }
 }
 
