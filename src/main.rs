@@ -4,7 +4,7 @@ use std::str::FromStr;
 use axum::Router;
 use config::{AppState, Environment};
 use dotenvy::dotenv;
-use routes::{auth, board, health};
+use routes::{auth, board, health, column};
 use tower_http::cors::{Any, CorsLayer};
 
 mod config;
@@ -52,6 +52,7 @@ pub fn create_app(state: AppState) -> Router {
         .merge(auth::routes())
         .merge(board::routes())
         .merge(health::routes())
+        .merge(column::routes())
         .layer(cors)
         .with_state(state)
 }
