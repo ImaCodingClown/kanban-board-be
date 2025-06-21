@@ -1,6 +1,5 @@
 use crate::config::AppState;
 use crate::models::auth::Claims;
-use async_trait::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::{request::Parts, StatusCode};
 use chrono::{Duration, Utc};
@@ -27,7 +26,6 @@ impl JWTMethods for JWTValidator {}
 
 pub struct AuthBearer(pub String);
 
-#[async_trait]
 impl FromRequestParts<AppState> for AuthBearer {
     type Rejection = (StatusCode, String);
 
