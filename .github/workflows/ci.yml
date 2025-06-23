@@ -21,6 +21,10 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
 
+    env:
+      MONGO_URI: mongodb://localhost:27017
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
