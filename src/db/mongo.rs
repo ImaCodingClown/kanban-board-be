@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use futures::TryStreamExt;
 use mongodb::{
     bson::{self, doc, oid::ObjectId, Document},
     results::InsertOneResult,
@@ -54,9 +55,12 @@ where
             .await
             .map_err(CustomError::MongoError)
     }
-    pub async fn fetch_many(&self, model: &T) -> Result<Cursor<T>, CustomError> {
+    pub async fn fetch_many(&self, model: &T) -> Result<Vec<T>, CustomError> {
         self.collection
             .find(model.query()?)
+            .await
+            .map_err(CustomError::MongoError)?
+            .try_collect()
             .await
             .map_err(CustomError::MongoError)
     }

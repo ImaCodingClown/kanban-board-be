@@ -13,6 +13,7 @@ pub struct Board {
     pub id: Option<ObjectId>,
     pub team: String,
     pub iteration: Option<String>,
+    pub columns: Vec<Column>,
 }
 
 impl Board {
@@ -21,6 +22,7 @@ impl Board {
             id: None,
             team,
             iteration: None,
+            columns: Vec::new(),
         }
     }
 }
@@ -35,31 +37,15 @@ pub struct Card {
     pub assignee: Option<String>,
     pub story_point: Option<u8>,
     pub priority: Option<String>,
-    pub parent_column: Option<ObjectId>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Column {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
     pub title: String,
-    pub parent_board: Option<ObjectId>,
+    pub cards: Vec<Card>,
 }
 
-impl_mongo!(Card, "cards", "general");
 impl_mongo!(Board, "boards", "general");
-impl_mongo!(Column, "columns", "general");
-impl MongoModel for Card {
-    fn unique_query(&self) -> Document {
-        doc! { "id": &self.id }
-    }
-}
-
-impl MongoModel for Column {
-    fn unique_query(&self) -> Document {
-        doc! { "id": &self.id }
-    }
-}
 
 impl MongoModel for Board {
     fn unique_query(&self) -> Document {

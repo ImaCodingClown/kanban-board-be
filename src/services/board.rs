@@ -5,8 +5,8 @@ use crate::{
 };
 use mongodb::Client;
 
-pub async fn get_board(team_name: String, db: &Client) -> Result<Option<Board>, CustomError> {
+pub async fn get_board(team_name: String, db: &Client) -> Result<Vec<Board>, CustomError> {
     let board_service = ODM::<Board>::build(db).await;
     let board = Board::new(team_name);
-    board_service.fetch_one(&board).await
+    board_service.fetch_many(&board).await
 }
