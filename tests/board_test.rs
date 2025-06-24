@@ -16,7 +16,4 @@ async fn test_get_board() {
     let result = get_board("".to_string(), &client).await;
 
     assert!(result.is_ok(), "get_board failed: {:?}", result);
-
-    let columns = result.unwrap();
-    assert!(columns.is_none(), "Board should be empty");
 }

@@ -3,7 +3,7 @@ use crate::{config::AppState, models::cards::Board};
 use axum::{http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 
 pub fn routes() -> Router<AppState> {
-    Router::new().route("/v1/board", get(handle_get_board1))
+    Router::new().route("/v1/board", get(handle_get_board))
 }
 
 async fn handle_get_board(
