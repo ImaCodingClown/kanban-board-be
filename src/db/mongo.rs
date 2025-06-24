@@ -1,5 +1,10 @@
 use async_trait::async_trait;
-use mongodb::{bson::Document, results::InsertOneResult, Client, Collection};
+use futures::TryStreamExt;
+use mongodb::{
+    bson::{self, doc, oid::ObjectId, Document},
+    results::InsertOneResult,
+    Client, Collection, Cursor,
+};
 use serde::{de::DeserializeOwned, Serialize};
 use std::sync::Arc;
 
@@ -14,6 +19,9 @@ pub async fn db_client(uri: &str) -> Arc<Client> {
 
 pub trait MongoModel: Send + Sync + DeserializeOwned + Serialize {
     fn unique_query(&self) -> Document;
+    fn query(&self) -> Result<Document, CustomError> {
+        bson::to_document(&self).map_err(|err| CustomError::CustomError(err.to_string()))
+    }
 }
 
 #[async_trait]
@@ -47,6 +55,31 @@ where
             .await
             .map_err(CustomError::MongoError)
     }
+    pub async fn fetch_many(&self, model: &T) -> Result<Vec<T>, CustomError> {
+        self.collection
+            .find(model.query()?)
+            .await
+            .map_err(CustomError::MongoError)?
+            .try_collect()
+            .await
+            .map_err(CustomError::MongoError)
+    }
+    #[allow(dead_code)]
+    pub async fn fetch_by_id(&self, id: ObjectId) -> Result<Option<T>, CustomError> {
+        self.collection
+            .find_one(doc! { "_id": id })
+            .await
+            .map_err(CustomError::MongoError)
+    }
+
+    #[allow(dead_code)]
+    pub async fn fetch_many_by_ids(&self, ids: Vec<ObjectId>) -> Result<Cursor<T>, CustomError> {
+        self.collection
+            .find(doc! { "_id": {"$in": ids} })
+            .await
+            .map_err(CustomError::MongoError)
+    }
+
     pub async fn save_one(&self, model: &T) -> Result<InsertOneResult, CustomError> {
         self.collection
             .insert_one(model)
