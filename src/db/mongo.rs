@@ -64,6 +64,7 @@ where
             .await
             .map_err(CustomError::MongoError)
     }
+    #[allow(dead_code)]
     pub async fn fetch_by_id(&self, id: ObjectId) -> Result<Option<T>, CustomError> {
         self.collection
             .find_one(doc! { "_id": id })
@@ -71,6 +72,7 @@ where
             .map_err(CustomError::MongoError)
     }
 
+    #[allow(dead_code)]
     pub async fn fetch_many_by_ids(&self, ids: Vec<ObjectId>) -> Result<Cursor<T>, CustomError> {
         self.collection
             .find(doc! { "_id": {"$in": ids} })
