@@ -26,6 +26,10 @@ impl Board {
         }
     }
 }
+#[derive(Deserialize)]
+pub struct CreateBoardPayload {
+    pub team: String,
+}
 
 #[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize)]
