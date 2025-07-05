@@ -1,6 +1,6 @@
 use crate::{
     db::mongo::{MongoService, ODM},
-    models::cards::{Board, Column},
+    models::cards::Board,
     utils::errors::CustomError,
 };
 use mongodb::Client;
@@ -12,24 +12,8 @@ pub async fn get_board(team_name: String, db: &Client) -> Result<Vec<Board>, Cus
 }
 
 pub async fn create_board(team_name: String, db: &Client) -> Result<Board, CustomError> {
-    let mut board = Board::new(team_name);
+    let board = Board::create_default(team_name);
     let board_service = ODM::<Board>::build(db).await;
-
-    board.columns = vec![
-        Column {
-            title: "To Do".into(),
-            cards: vec![],
-        },
-        Column {
-            title: "In Progress".into(),
-            cards: vec![],
-        },
-        Column {
-            title: "Done".into(),
-            cards: vec![],
-        },
-    ];
-
     board_service.save_one(&board).await?;
     Ok(board)
 }
