@@ -25,6 +25,32 @@ impl Board {
             columns: Vec::new(),
         }
     }
+    pub fn create_default(team: String) -> Self {
+        Self {
+            id: None,
+            team,
+            iteration: None,
+            columns: vec![
+                Column {
+                    title: "To Do".to_string(),
+                    cards: vec![],
+                },
+                Column {
+                    title: "In Progress".to_string(),
+                    cards: vec![],
+                },
+                Column {
+                    title: "Done".to_string(),
+                    cards: vec![],
+                },
+            ],
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct CreateBoardPayload {
+    pub team: String,
 }
 
 #[serde_with::skip_serializing_none]

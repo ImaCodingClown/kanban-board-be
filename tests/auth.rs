@@ -94,7 +94,7 @@ async fn test_me_endpoint() {
     // Perform GET /me with the Bearer token
     let request = Request::builder()
         .uri("/me")
-        .header("Authorization", format!("Bearer {}", token))
+        .header("Authorization", format!("Bearer {token}"))
         .method("GET")
         .body(Body::empty())
         .unwrap();
