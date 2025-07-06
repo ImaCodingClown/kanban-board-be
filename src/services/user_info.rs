@@ -6,6 +6,6 @@ pub async fn get_user_by_email(db: &Database, email: &str) -> Result<User, Strin
     users
         .find_one(doc! { "email": email })
         .await
-        .map_err(|e| format!("DB error: {}", e))?
+        .map_err(|e| format!("DB error: {e}"))?
         .ok_or_else(|| "User not found".to_string())
 }
