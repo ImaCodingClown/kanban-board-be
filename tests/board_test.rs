@@ -15,5 +15,5 @@ async fn test_get_board() {
 
     let result = get_board("".to_string(), &client).await;
 
-    assert!(result.is_ok(), "get_board failed: {:?}", result);
+    assert!(result.is_ok(), "get_board failed: {result:?}");
 }
