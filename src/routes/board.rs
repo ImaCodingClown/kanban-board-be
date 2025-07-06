@@ -1,6 +1,14 @@
-use crate::services::board::{get_board, create_board};
-use crate::{config::AppState, models::cards::{Board, CreateBoardPayload}};
-use axum::{http::StatusCode, response::IntoResponse, routing::{get, post}, Json, Router};
+use crate::services::board::{create_board, get_board};
+use crate::{
+    config::AppState,
+    models::cards::{Board, CreateBoardPayload},
+};
+use axum::{
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
+    Json, Router,
+};
 
 pub fn routes() -> Router<AppState> {
     Router::new()

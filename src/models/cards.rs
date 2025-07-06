@@ -29,12 +29,21 @@ impl Board {
         Self {
             id: None,
             team,
-            iteration: None, 
-            columns: vec! [
-                Column { title: "To Do".to_string(), cards: vec![] },
-                Column { title: "In Progress".to_string(), cards: vec![] },
-                Column { title: "Done".to_string(), cards: vec![] },
-            ]
+            iteration: None,
+            columns: vec![
+                Column {
+                    title: "To Do".to_string(),
+                    cards: vec![],
+                },
+                Column {
+                    title: "In Progress".to_string(),
+                    cards: vec![],
+                },
+                Column {
+                    title: "Done".to_string(),
+                    cards: vec![],
+                },
+            ],
         }
     }
 }
