@@ -29,12 +29,21 @@ impl Board {
         Self {
             id: None,
             team,
-            iteration: None, 
-            columns: vec! [
-                Column { title: "To Do".to_string(), cards: vec![] },
-                Column { title: "In Progress".to_string(), cards: vec![] },
-                Column { title: "Done".to_string(), cards: vec![] },
-            ]
+            iteration: None,
+            columns: vec![
+                Column {
+                    title: "To Do".to_string(),
+                    cards: vec![],
+                },
+                Column {
+                    title: "In Progress".to_string(),
+                    cards: vec![],
+                },
+                Column {
+                    title: "Done".to_string(),
+                    cards: vec![],
+                },
+            ],
         }
     }
 }
@@ -45,7 +54,7 @@ pub struct CreateBoardPayload {
 }
 
 #[serde_with::skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Card {
     #[serde(rename = "_id")]
     pub id: Option<ObjectId>,
@@ -54,6 +63,14 @@ pub struct Card {
     pub assignee: Option<String>,
     pub story_point: Option<u8>,
     pub priority: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct AddCardPayload {
+    pub title: String,
+    pub description: Option<String>,
+    pub column_id: String,
+    pub team: String, // needed to locate the board
 }
 
 #[derive(Debug, Serialize, Deserialize)]
