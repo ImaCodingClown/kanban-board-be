@@ -1,3 +1,4 @@
+// File: src/services/board.rs
 use crate::{
     db::mongo::{MongoService, ODM},
     models::cards::Board,
@@ -5,10 +6,18 @@ use crate::{
 };
 use mongodb::Client;
 
-pub async fn get_board(team_name: String, db: &Client) -> Result<Vec<Board>, CustomError> {
+pub async fn get_board_by_team(
+    team_name: String,
+    db: &Client,
+) -> Result<Vec<crate::models::cards::Column>, CustomError> {
     let board_service = ODM::<Board>::build(db).await;
-    let board = Board::new(team_name);
-    board_service.fetch_many(&board).await
+    let mut boards = board_service.fetch_many_by_team(&team_name).await?;
+
+    if let Some(board) = boards.pop() {
+        Ok(board.columns)
+    } else {
+        Ok(vec![])
+    }
 }
 
 pub async fn create_board(team_name: String, db: &Client) -> Result<Board, CustomError> {

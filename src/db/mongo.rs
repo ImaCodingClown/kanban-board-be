@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use futures::TryStreamExt;
 use mongodb::{
-    bson::{self, doc, oid::ObjectId, Document},
+    bson::{ doc, oid::ObjectId, Document},
     results::InsertOneResult,
     Client, Collection, Cursor,
 };
@@ -19,9 +19,9 @@ pub async fn db_client(uri: &str) -> Arc<Client> {
 
 pub trait MongoModel: Send + Sync + DeserializeOwned + Serialize {
     fn unique_query(&self) -> Document;
-    fn query(&self) -> Result<Document, CustomError> {
-        bson::to_document(&self).map_err(|err| CustomError::CustomError(err.to_string()))
-    }
+    // fn query(&self) -> Result<Document, CustomError> {
+    //     bson::to_document(&self).map_err(|err| CustomError::CustomError(err.to_string()))
+    // }
 }
 
 #[async_trait]
@@ -55,15 +55,26 @@ where
             .await
             .map_err(CustomError::MongoError)
     }
-    pub async fn fetch_many(&self, model: &T) -> Result<Vec<T>, CustomError> {
-        self.collection
-            .find(model.query()?)
+    // pub async fn fetch_many(&self, model: &T) -> Result<Vec<T>, CustomError> {
+    //     self.collection
+    //         .find(model.query()?)
+    //         .await
+    //         .map_err(CustomError::MongoError)?
+    //         .try_collect()
+    //         .await
+    //         .map_err(CustomError::MongoError)
+    // }
+
+    pub async fn fetch_many_by_team(&self, team: &str) -> Result<Vec<T>, CustomError> {
+        let cursor = self
+            .collection
+            .find(doc! { "team": team })
             .await
-            .map_err(CustomError::MongoError)?
-            .try_collect()
-            .await
-            .map_err(CustomError::MongoError)
+            .map_err(CustomError::from)?;
+        let items: Vec<T> = cursor.try_collect().await.map_err(CustomError::from)?;
+        Ok(items)
     }
+
     #[allow(dead_code)]
     pub async fn fetch_by_id(&self, id: ObjectId) -> Result<Option<T>, CustomError> {
         self.collection

@@ -19,7 +19,12 @@ pub struct User {
 }
 
 impl User {
-    pub fn create(username: String, email: String, password_hash: String) -> Self {
+    pub fn create(
+        username: String,
+        email: String,
+        password_hash: String,
+        teams: Vec<String>,
+    ) -> Self {
         User {
             id: None,
             username,
@@ -27,7 +32,7 @@ impl User {
             password_hash,
             group: Vec::new(),
             permissions: Vec::new(),
-            teams: Vec::new(),
+            teams,
         }
     }
 }
