@@ -20,6 +20,7 @@ async fn handle_add_card(
     State(state): State<AppState>,
     Json(payload): Json<AddCardPayload>,
 ) -> impl IntoResponse {
+    println!("Add card called");
     match add_card(payload, &state.db).await {
         Ok(card) => (StatusCode::CREATED, Json(card)).into_response(),
         Err(e) => (

@@ -6,6 +6,7 @@ use crate::{
 use mongodb::{bson::oid::ObjectId, Client};
 
 pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, CustomError> {
+    println!("first add card called");
     let board_service = ODM::<Board>::build(db).await;
     let mut boards = board_service
         .fetch_many(&Board::new(payload.team.clone()))
@@ -19,7 +20,7 @@ pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, Cust
     let col = board
         .columns
         .iter_mut()
-        .find(|c| c.title == payload.column_id)
+        .find(|c| c.title == payload.column_name)
         .ok_or_else(|| CustomError::CustomError("Column not found".to_string()))?;
 
     // Create and insert the card

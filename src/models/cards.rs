@@ -69,8 +69,8 @@ pub struct Card {
 pub struct AddCardPayload {
     pub title: String,
     pub description: Option<String>,
-    pub column_id: String,
-    pub team: String, // needed to locate the board
+    pub column_name: String,
+    pub team: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -78,6 +78,7 @@ pub struct Column {
     pub title: String,
     pub cards: Vec<Card>,
 }
+
 
 impl_mongo!(Board, "boards", "general");
 

@@ -37,6 +37,7 @@ async fn handle_create_board(
     state: axum::extract::State<AppState>,
     Json(payload): Json<CreateBoardPayload>,
 ) -> impl IntoResponse {
+    println!("create board hit");
     match create_board(payload.team, &state.db).await {
         Ok(board) => (StatusCode::CREATED, Json(board)).into_response(),
         Err(e) => (
