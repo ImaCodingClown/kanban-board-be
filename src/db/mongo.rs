@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use futures::TryStreamExt;
 use mongodb::{
-    bson::{ doc, oid::ObjectId, Document},
+    bson::{doc, oid::ObjectId, Document},
     results::InsertOneResult,
     Client, Collection, Cursor,
 };
