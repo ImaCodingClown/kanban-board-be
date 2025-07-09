@@ -1,5 +1,5 @@
 use dotenvy::dotenv;
-use kanban_backend::{models::cards::Board, services::board::get_board};
+use kanban_backend::{models::cards::Board, services::board::get_board_by_team};
 use mongodb::{options::ClientOptions, Client};
 use std::env;
 #[tokio::test]
@@ -13,7 +13,7 @@ async fn test_get_board() {
     let users = db.collection::<Board>("boards");
     users.drop().await.unwrap(); // clear collection before test
 
-    let result = get_board("".to_string(), &client).await;
+    let result = get_board_by_team("".to_string(), &client).await;
 
     assert!(result.is_ok(), "get_board failed: {result:?}");
 }

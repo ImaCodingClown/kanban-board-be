@@ -1,26 +1,33 @@
-use crate::services::board::{create_board, get_board};
+// File: src/routes/board.rs
 use crate::{
     config::AppState,
-    models::cards::{Board, CreateBoardPayload},
+    models::cards::CreateBoardPayload,
+    services::board::{create_board, get_board_by_team},
 };
 use axum::{
+    extract::{Query, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
 
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct BoardQuery {
+    pub team: String,
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/v1/board", get(handle_get_board))
-        .route("/v1/board", post(handle_create_board))
+        .route("/board", get(handle_get_board))
+        .route("/board", post(handle_create_board))
 }
 
 async fn handle_get_board(
-    state: axum::extract::State<AppState>,
-    Json(payload): Json<Board>,
+    State(state): State<AppState>,
+    Query(payload): Query<BoardQuery>,
 ) -> impl IntoResponse {
-    match get_board(payload.team, &state.db).await {
+    match get_board_by_team(payload.team, &state.db).await {
         // Returns (StatusCode, Json) tuple converted into an HTTP response
         Ok(columns) => (StatusCode::OK, Json(columns)).into_response(),
 
