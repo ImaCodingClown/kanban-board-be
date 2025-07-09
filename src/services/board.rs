@@ -26,3 +26,4 @@ pub async fn create_board(team_name: String, db: &Client) -> Result<Board, Custo
     board_service.save_one(&board).await?;
     Ok(board)
 }
+

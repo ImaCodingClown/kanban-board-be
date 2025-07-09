@@ -54,7 +54,7 @@ pub struct CreateBoardPayload {
 }
 
 #[serde_with::skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Card {
     #[serde(rename = "_id")]
     pub id: Option<ObjectId>,
@@ -65,11 +65,20 @@ pub struct Card {
     pub priority: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct AddCardPayload {
+    pub title: String,
+    pub description: Option<String>,
+    pub column_name: String,
+    pub team: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Column {
     pub title: String,
     pub cards: Vec<Card>,
 }
+
 
 impl_mongo!(Board, "boards", "general");
 
