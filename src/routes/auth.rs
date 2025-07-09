@@ -28,6 +28,7 @@ pub async fn handle_get_me(
             "id": user.id,
             "username": user.username,
             "email": user.email,
+            "teams": user.teams,
         })),
         Err(_) => Json(serde_json::json!({ "error": "User not found" })),
     }

@@ -6,10 +6,10 @@ use crate::{
 use mongodb::{bson::oid::ObjectId, Client};
 
 pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, CustomError> {
-    println!("first add card called");
+    println!("Add card hit");
     let board_service = ODM::<Board>::build(db).await;
     let mut boards = board_service
-        .fetch_many(&Board::new(payload.team.clone()))
+        .fetch_many_by_team(&payload.team.clone())
         .await?;
 
     let board = boards

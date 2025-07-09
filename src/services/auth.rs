@@ -15,7 +15,8 @@ pub async fn signup(
 ) -> Result<String, CustomError> {
     let user_service = ODM::<User>::build(db).await;
     let hashed = hash(&password, 4).unwrap();
-    let user = User::create(username.clone(), email.clone(), hashed);
+    let teams = vec![username.clone()];
+    let user = User::create(username.clone(), email.clone(), hashed, teams);
 
     if user_service.fetch_one(&user).await?.is_some() {
         return Err("Username/email already in use.".into());
