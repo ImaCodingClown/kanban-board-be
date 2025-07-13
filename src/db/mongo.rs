@@ -97,4 +97,14 @@ where
             .await
             .map_err(CustomError::MongoError)
     }
+
+    pub async fn replace_one(&self, model: &T, id: &ObjectId) -> Result<(), CustomError> {
+        let filter = doc! { "_id": id };
+        self.collection
+            .replace_one(filter, model)
+            .await
+            .map_err(CustomError::MongoError)?;
+        Ok(())
+    }
+    
 }
