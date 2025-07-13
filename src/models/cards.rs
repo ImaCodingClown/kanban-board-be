@@ -49,7 +49,7 @@ impl Board {
 }
 
 #[derive(Deserialize)]
-pub struct CreateBoardPayload {
+pub struct GetTeamPayload {
     pub team: String,
 }
 
@@ -65,7 +65,7 @@ pub struct Card {
     pub priority: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct AddCardPayload {
     pub title: String,
     pub description: Option<String>,
@@ -79,6 +79,10 @@ pub struct Column {
     pub cards: Vec<Card>,
 }
 
+#[derive(Deserialize)]
+pub struct TeamQuery {
+    pub team: String,
+}
 
 impl_mongo!(Board, "boards", "general");
 

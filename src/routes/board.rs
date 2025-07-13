@@ -1,7 +1,7 @@
 // File: src/routes/board.rs
 use crate::{
     config::AppState,
-    models::cards::CreateBoardPayload,
+    models::cards::GetTeamPayload,
     services::board::{create_board, get_board_by_team},
 };
 use axum::{
@@ -42,7 +42,7 @@ async fn handle_get_board(
 
 async fn handle_create_board(
     state: axum::extract::State<AppState>,
-    Json(payload): Json<CreateBoardPayload>,
+    Json(payload): Json<GetTeamPayload>,
 ) -> impl IntoResponse {
     match create_board(payload.team, &state.db).await {
         Ok(board) => (StatusCode::CREATED, Json(board)).into_response(),
