@@ -1,6 +1,6 @@
 use axum::Router;
 use config::AppState;
-use routes::{auth, board, health, cards};
+use routes::{auth, board, cards, health};
 use tower_http::cors::{Any, CorsLayer};
 
 mod config;

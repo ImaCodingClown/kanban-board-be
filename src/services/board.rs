@@ -6,10 +6,7 @@ use crate::{
 };
 use mongodb::Client;
 
-pub async fn get_board_by_team(
-    team_name: String,
-    db: &Client,
-) -> Result<Board, CustomError> {
+pub async fn get_board_by_team(team_name: String, db: &Client) -> Result<Board, CustomError> {
     let board_service = ODM::<Board>::build(db).await;
     let mut boards = board_service.fetch_many_by_team(&team_name).await?;
 
@@ -29,6 +26,8 @@ pub async fn create_board(team_name: String, db: &Client) -> Result<Board, Custo
 
 pub async fn update_board(board: Board, db: &Client) -> Result<Board, CustomError> {
     let board_service = ODM::<Board>::build(db).await;
-    board_service.replace_one(&board, &board.id.unwrap()).await?;
+    board_service
+        .replace_one(&board, &board.id.unwrap())
+        .await?;
     Ok(board)
 }

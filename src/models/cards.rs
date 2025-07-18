@@ -56,7 +56,10 @@ pub struct GetTeamPayload {
 #[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Card {
-    #[serde(rename = "_id", serialize_with = "crate::utils::mongo_serializers::opt_oid_to_str")]
+    #[serde(
+        rename = "_id",
+        serialize_with = "crate::utils::mongo_serializers::opt_oid_to_str"
+    )]
     pub id: Option<ObjectId>,
     pub title: String,
     pub description: Option<String>,
