@@ -8,7 +8,8 @@ use mongodb::{bson::oid::ObjectId, Client};
 pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, CustomError> {
     let board_service = ODM::<Board>::build(db).await;
     let mut boards = board_service
-        .fetch_many_by_team(&payload.team.clone())
+        //TODO: Replace LJY Members
+        .fetch_many_by_team("LJY Members")
         .await?;
 
     let board = boards
@@ -43,8 +44,7 @@ pub async fn get_columns(team: &str, db: &Client) -> Result<Vec<String>, CustomE
     let board_service = ODM::<Board>::build(db).await;
     let boards = board_service.fetch_many_by_team(team).await?;
 
-    let board = boards
-        .get(0)
+    let board = boards.first()
         .ok_or_else(|| CustomError::CustomError("Board not found".to_string()))?;
 
     let column_titles = board.columns.iter().map(|c| c.title.clone()).collect();
