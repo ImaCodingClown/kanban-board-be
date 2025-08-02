@@ -1,6 +1,6 @@
 use crate::{
     db::mongo::{MongoService, ODM},
-    models::cards::{AddCardPayload, DeleteCardPayload, Board, Card},
+    models::cards::{AddCardPayload, DeleteCardPayload, EditCardPayload, Board, Card},
     utils::errors::CustomError,
 };
 use mongodb::{bson::oid::ObjectId, Client};
@@ -83,4 +83,49 @@ pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), 
     board_service.replace_one(board, &board_id).await?;
 
     Ok(())
+}
+
+pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, CustomError> {
+    let board_service = ODM::<Board>::build(db).await;
+
+    // TODO: replace LJY Members
+    let mut boards = board_service
+        .fetch_many_by_team("LJY Members")
+        .await?;
+
+    let board = boards
+        .get_mut(0)
+        .ok_or_else(|| CustomError::CustomError("Board not found".to_string()))?;
+
+    let card_oid = ObjectId::parse_str(&payload.card_id)
+        .map_err(|_| CustomError::CustomError("Invalid card ID".to_string()))?;
+
+    {
+        let column = board
+            .columns
+            .iter_mut()
+            .find(|col| col.title == payload.column_name)
+            .ok_or_else(|| CustomError::CustomError("Column not found".to_string()))?;
+
+        let card = column
+            .cards
+            .iter_mut()
+            .find(|card| card.id == Some(card_oid))
+            .ok_or_else(|| CustomError::CustomError("Card not found".to_string()))?;
+
+        card.title = payload.title.clone();
+        card.description = Some(payload.description.clone());
+    } 
+
+    let board_id = board.id.clone().unwrap();
+    board_service.replace_one(board, &board_id).await?;
+
+    let edited_card = board
+        .columns
+        .iter()
+        .find(|col| col.title == payload.column_name)
+        .and_then(|col| col.cards.iter().find(|c| c.id == Some(card_oid)))
+        .ok_or_else(|| CustomError::CustomError("Updated card not found".to_string()))?;
+
+    Ok(edited_card.clone())
 }
