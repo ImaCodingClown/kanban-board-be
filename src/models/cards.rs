@@ -73,6 +73,24 @@ pub struct AddCardPayload {
     pub title: String,
     pub description: Option<String>,
     pub column_name: String,
+    pub story_point: Option<u8>,
+    pub team: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct DeleteCardPayload {
+    pub card_id: String,
+    pub column_name: String,
+    pub team: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct EditCardPayload {
+    pub card_id: String,
+    pub title: String,
+    pub description: String,
+    pub column_name: String,
+    pub story_point: Option<u8>,
     pub team: String,
 }
 
