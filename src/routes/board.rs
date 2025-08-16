@@ -1,4 +1,3 @@
-// File: src/routes/board.rs
 use crate::{
     config::AppState,
     models::cards::{Board, GetTeamPayload},
@@ -16,6 +15,7 @@ use axum::{
 pub struct BoardQuery {
     pub team: String,
 }
+
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct UpdateBoardQuery {
     pub board: Board,
@@ -33,10 +33,7 @@ async fn handle_get_board(
     Query(payload): Query<BoardQuery>,
 ) -> impl IntoResponse {
     match get_board_by_team(payload.team, &state.db).await {
-        // Returns (StatusCode, Json) tuple converted into an HTTP response
         Ok(board) => (StatusCode::OK, Json(board)).into_response(),
-
-        // Returns 500 error with JSON error message
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": format!("{e}") })),
@@ -46,7 +43,7 @@ async fn handle_get_board(
 }
 
 async fn handle_create_board(
-    state: axum::extract::State<AppState>,
+    State(state): State<AppState>,
     Json(payload): Json<GetTeamPayload>,
 ) -> impl IntoResponse {
     match create_board(payload.team, &state.db).await {
@@ -58,8 +55,9 @@ async fn handle_create_board(
             .into_response(),
     }
 }
+
 async fn handle_update_board(
-    state: axum::extract::State<AppState>,
+    State(state): State<AppState>,
     Json(payload): Json<UpdateBoardQuery>,
 ) -> impl IntoResponse {
     match update_board(payload.board, &state.db).await {

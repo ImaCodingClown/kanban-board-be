@@ -8,8 +8,7 @@ use mongodb::{bson::oid::ObjectId, Client};
 pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, CustomError> {
     let board_service = ODM::<Board>::build(db).await;
     let mut boards = board_service
-        //TODO: Replace LJY Members
-        .fetch_many_by_team("LJY Members")
+        .fetch_many_by_team(&payload.team)
         .await?;
 
     let board = boards
@@ -54,10 +53,8 @@ pub async fn get_columns(team: &str, db: &Client) -> Result<Vec<String>, CustomE
 
 pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), CustomError> {
     let board_service = ODM::<Board>::build(db).await;
-
-    // TODO: replace LJY Members
     let mut boards = board_service
-        .fetch_many_by_team("LJY Members")
+        .fetch_many_by_team(&payload.team)
         .await?;
 
     let board = boards
@@ -87,10 +84,8 @@ pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), 
 
 pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, CustomError> {
     let board_service = ODM::<Board>::build(db).await;
-
-    // TODO: replace LJY Members
     let mut boards = board_service
-        .fetch_many_by_team("LJY Members")
+        .fetch_many_by_team(&payload.team)
         .await?;
 
     let board = boards
