@@ -1,20 +1,28 @@
 use crate::config::AppState;
 use crate::models::auth::{AuthLoginPayload, AuthPayload};
 use crate::services::auth::{login, signup};
-use crate::services::user_info::get_user_by_email;
+use crate::services::user_info::{get_user_by_email, update_user_teams};
 use crate::utils::jwt::AuthBearer;
 use axum::{
     extract::State,
     routing::{get, post},
     Json, Router,
 };
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+
+#[derive(Deserialize)]
+pub struct UpdateTeamsPayload {
+    pub email: String,
+    pub teams: Vec<String>,
+}
 
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/signup", post(handle_signup))
         .route("/login", post(handle_login))
         .route("/me", get(handle_get_me))
+        .route("/update-user-teams", post(handle_update_teams))
 }
 
 pub async fn handle_get_me(
@@ -65,6 +73,17 @@ async fn handle_login(
     .await
     {
         Ok(token) => Json(json!({ "token": token })),
+        Err(e) => Json(json!({ "error": e })),
+    }
+}
+
+async fn handle_update_teams(
+    State(state): State<AppState>,
+    AuthBearer(_user_email): AuthBearer,
+    Json(payload): Json<UpdateTeamsPayload>,
+) -> Json<serde_json::Value> {
+    match update_user_teams(&state.db, &payload.email, payload.teams).await {
+        Ok(_) => Json(json!({ "success": true })),
         Err(e) => Json(json!({ "error": e })),
     }
 }

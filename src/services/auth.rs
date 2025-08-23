@@ -1,6 +1,6 @@
 use crate::db::mongo::{MongoService, ODM};
 use crate::models::users::User;
-use crate::services::board::create_board;
+use crate::services::board::{create_board, get_board_by_team};
 use crate::utils::errors::CustomError;
 use crate::utils::jwt::{JWTMethods, JWTValidator};
 use bcrypt::{hash, verify};
@@ -15,15 +15,17 @@ pub async fn signup(
 ) -> Result<String, CustomError> {
     let user_service = ODM::<User>::build(db).await;
     let hashed = hash(&password, 4).unwrap();
-    let teams = vec![username.clone()];
-    let user = User::create(username.clone(), email.clone(), hashed, teams);
+    let teams = vec!["LJY Members".to_string()];
+    let user = User::create(username.clone(), email.clone(), hashed, teams.clone());
 
     if user_service.fetch_one(&user).await?.is_some() {
         return Err("Username/email already in use.".into());
     }
 
     user_service.save_one(&user).await?;
-    create_board(username, db).await?;
+    
+    let _ = get_board_by_team("LJY Members".to_string(), db).await;
+    
     Ok(JWTValidator::create_jwt(&email, secret))
 }
 
