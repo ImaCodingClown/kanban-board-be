@@ -23,9 +23,9 @@ pub async fn signup(
     }
 
     user_service.save_one(&user).await?;
-    
+
     let _ = get_board_by_team("LJY Members".to_string(), db).await;
-    
+
     Ok(JWTValidator::create_jwt(&email, secret))
 }
 

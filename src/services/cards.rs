@@ -1,15 +1,13 @@
 use crate::{
     db::mongo::{MongoService, ODM},
-    models::cards::{AddCardPayload, DeleteCardPayload, EditCardPayload, Board, Card},
+    models::cards::{AddCardPayload, Board, Card, DeleteCardPayload, EditCardPayload},
     utils::errors::CustomError,
 };
 use mongodb::{bson::oid::ObjectId, Client};
 
 pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, CustomError> {
     let board_service = ODM::<Board>::build(db).await;
-    let mut boards = board_service
-        .fetch_many_by_team(&payload.team)
-        .await?;
+    let mut boards = board_service.fetch_many_by_team(&payload.team).await?;
 
     let board = boards
         .get_mut(0)
@@ -43,7 +41,8 @@ pub async fn get_columns(team: &str, db: &Client) -> Result<Vec<String>, CustomE
     let board_service = ODM::<Board>::build(db).await;
     let boards = board_service.fetch_many_by_team(team).await?;
 
-    let board = boards.first()
+    let board = boards
+        .first()
         .ok_or_else(|| CustomError::CustomError("Board not found".to_string()))?;
 
     let column_titles = board.columns.iter().map(|c| c.title.clone()).collect();
@@ -53,9 +52,7 @@ pub async fn get_columns(team: &str, db: &Client) -> Result<Vec<String>, CustomE
 
 pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), CustomError> {
     let board_service = ODM::<Board>::build(db).await;
-    let mut boards = board_service
-        .fetch_many_by_team(&payload.team)
-        .await?;
+    let mut boards = board_service.fetch_many_by_team(&payload.team).await?;
 
     let board = boards
         .get_mut(0)
@@ -84,9 +81,7 @@ pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), 
 
 pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, CustomError> {
     let board_service = ODM::<Board>::build(db).await;
-    let mut boards = board_service
-        .fetch_many_by_team(&payload.team)
-        .await?;
+    let mut boards = board_service.fetch_many_by_team(&payload.team).await?;
 
     let board = boards
         .get_mut(0)
@@ -111,7 +106,7 @@ pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, Cu
         card.title = payload.title.clone();
         card.description = Some(payload.description.clone());
         card.story_point = payload.story_point.clone();
-    } 
+    }
 
     let board_id = board.id.clone().unwrap();
     board_service.replace_one(board, &board_id).await?;

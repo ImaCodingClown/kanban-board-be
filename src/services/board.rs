@@ -12,13 +12,22 @@ pub async fn get_board_by_team(team_name: String, db: &Client) -> Result<Board, 
     if let Some(board) = boards.pop() {
         Ok(board)
     } else {
-        Ok(Board::create_default(team_name))
+        // Create a default board if none exists
+        let new_board = Board::create_default(team_name.clone());
+        board_service.save_one(&new_board).await?;
+        Ok(new_board)
     }
 }
 
 pub async fn create_board(team_name: String, db: &Client) -> Result<Board, CustomError> {
-    let board = Board::create_default(team_name.clone());
     let board_service = ODM::<Board>::build(db).await;
+
+    let existing_boards = board_service.fetch_many_by_team(&team_name).await?;
+    if !existing_boards.is_empty() {
+        return Ok(existing_boards.into_iter().next().unwrap());
+    }
+
+    let board = Board::create_default(team_name.clone());
     board_service.save_one(&board).await?;
     Ok(board)
 }
