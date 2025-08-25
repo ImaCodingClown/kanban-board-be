@@ -1,6 +1,6 @@
 use crate::db::mongo::{MongoService, ODM};
 use crate::models::users::User;
-use crate::services::board::{create_board, get_board_by_team};
+use crate::services::board::{get_board_by_team};
 use crate::utils::errors::CustomError;
 use crate::utils::jwt::{JWTMethods, JWTValidator};
 use bcrypt::{hash, verify};

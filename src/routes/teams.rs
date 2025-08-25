@@ -1,44 +1,21 @@
 use crate::config::AppState;
-use crate::services::teams::{create_team, delete_team, update_user_teams};
+use crate::models::teams::{CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload, TeamResponse, TeamsResponse};
+use crate::services::teams::{create_team, get_team, get_user_teams, update_team, add_member, remove_member, leave_team, delete_team};
 use crate::utils::jwt::AuthBearer;
-use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
-use serde::Deserialize;
+use axum::{extract::{Path, State}, http::StatusCode, response::IntoResponse, routing::{get, post, put, delete}, Json, Router};
 use serde_json::json;
-
-#[derive(Deserialize)]
-pub struct UpdateTeamsPayload {
-    pub teams: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateTeamPayload {
-    pub team_name: String,
-}
-
-#[derive(Deserialize)]
-pub struct DeleteTeamPayload {
-    pub team_name: String,
-}
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/update", post(handle_update_teams))
-        .route("/create", post(handle_create_team))
-        .route("/delete", post(handle_delete_team))
-}
+        .route("/", post(handle_create_team))
+        .route("/", get(handle_get_user_teams))
 
-async fn handle_update_teams(
-    State(state): State<AppState>,
-    AuthBearer(user_email): AuthBearer,
-    Json(payload): Json<UpdateTeamsPayload>,
-) -> impl IntoResponse {
-    match update_user_teams(&state.db, &user_email, payload.teams).await {
-        Ok(_) => (StatusCode::OK, Json(json!({ "success": true }))),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": e })),
-        ),
-    }
+        .route("/{team_name}", get(handle_get_team))
+        .route("/{team_name}", put(handle_update_team))
+        .route("/{team_name}", delete(handle_delete_team))
+        .route("/{team_name}/members", post(handle_add_member))
+        .route("/{team_name}/members", delete(handle_remove_member))
+        .route("/{team_name}/leave", post(handle_leave_team))
 }
 
 async fn handle_create_team(
@@ -46,46 +23,200 @@ async fn handle_create_team(
     AuthBearer(user_email): AuthBearer,
     Json(payload): Json<CreateTeamPayload>,
 ) -> impl IntoResponse {
-    println!("Creating team '{}' for user: {}", payload.team_name, user_email);
-    
-    match create_team(&state.db, &user_email, &payload.team_name).await {
-        Ok(teams) => {
-            println!("Successfully created team. Updated teams: {:?}", teams);
-            (
-                StatusCode::CREATED,
-                Json(json!({ "success": true, "teams": teams })),
-            )
-        },
-        Err(e) => {
-            println!("Failed to create team: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": e })),
-            )
-        },
+    match create_team(&state.db, &user_email, payload).await {
+        Ok(team) => (
+            StatusCode::CREATED,
+            Json(TeamResponse {
+                success: true,
+                team: Some(team),
+                message: "Team created successfully".to_string(),
+            }),
+        ),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(TeamResponse {
+                success: false,
+                team: None,
+                message: e,
+            }),
+        ),
+    }
+}
+
+async fn handle_get_team(
+    State(state): State<AppState>,
+    AuthBearer(_user_email): AuthBearer,
+    Path(team_name): Path<String>,
+) -> impl IntoResponse {
+    match get_team(&state.db, &team_name).await {
+        Ok(Some(team)) => (
+            StatusCode::OK,
+            Json(TeamResponse {
+                success: true,
+                team: Some(team),
+                message: "Team retrieved successfully".to_string(),
+            }),
+        ),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(TeamResponse {
+                success: false,
+                team: None,
+                message: "Team not found".to_string(),
+            }),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(TeamResponse {
+                success: false,
+                team: None,
+                message: e,
+            }),
+        ),
+    }
+}
+
+async fn handle_get_user_teams(
+    State(state): State<AppState>,
+    AuthBearer(user_email): AuthBearer,
+) -> impl IntoResponse {
+    match get_user_teams(&state.db, &user_email).await {
+        Ok(teams) => (
+            StatusCode::OK,
+            Json(TeamsResponse {
+                success: true,
+                teams,
+                message: "User teams retrieved successfully".to_string(),
+            }),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(TeamsResponse {
+                success: false,
+                teams: vec![],
+                message: e,
+            }),
+        ),
+    }
+}
+
+async fn handle_update_team(
+    State(state): State<AppState>,
+    AuthBearer(user_email): AuthBearer,
+    Path(team_name): Path<String>,
+    Json(payload): Json<UpdateTeamPayload>,
+) -> impl IntoResponse {
+    match update_team(&state.db, &user_email, &team_name, payload).await {
+        Ok(team) => (
+            StatusCode::OK,
+            Json(TeamResponse {
+                success: true,
+                team: Some(team),
+                message: "Team updated successfully".to_string(),
+            }),
+        ),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(TeamResponse {
+                success: false,
+                team: None,
+                message: e,
+            }),
+        ),
+    }
+}
+
+async fn handle_add_member(
+    State(state): State<AppState>,
+    AuthBearer(user_email): AuthBearer,
+    Path(team_name): Path<String>,
+    Json(payload): Json<AddMemberPayload>,
+) -> impl IntoResponse {
+    match add_member(&state.db, &user_email, &team_name, payload).await {
+        Ok(team) => (
+            StatusCode::OK,
+            Json(TeamResponse {
+                success: true,
+                team: Some(team),
+                message: "Member added successfully".to_string(),
+            }),
+        ),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(TeamResponse {
+                success: false,
+                team: None,
+                message: e,
+            }),
+        ),
+    }
+}
+
+async fn handle_remove_member(
+    State(state): State<AppState>,
+    AuthBearer(user_email): AuthBearer,
+    Path(team_name): Path<String>,
+    Json(payload): Json<RemoveMemberPayload>,
+) -> impl IntoResponse {
+    match remove_member(&state.db, &user_email, &team_name, payload).await {
+        Ok(team) => (
+            StatusCode::OK,
+            Json(TeamResponse {
+                success: true,
+                team: Some(team),
+                message: "Member removed successfully".to_string(),
+            }),
+        ),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(TeamResponse {
+                success: false,
+                team: None,
+                message: e,
+            }),
+        ),
+    }
+}
+
+async fn handle_leave_team(
+    State(state): State<AppState>,
+    AuthBearer(user_email): AuthBearer,
+    Path(team_name): Path<String>,
+) -> impl IntoResponse {
+    match leave_team(&state.db, &user_email, &team_name).await {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(json!({ "success": true, "message": "Left team successfully" })),
+        ),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "success": false, "message": e })),
+        ),
     }
 }
 
 async fn handle_delete_team(
     State(state): State<AppState>,
     AuthBearer(user_email): AuthBearer,
-    Json(payload): Json<DeleteTeamPayload>,
+    Path(team_name): Path<String>,
 ) -> impl IntoResponse {
-    if payload.team_name == "LJY Members" {
+    if team_name == "LJY Members" {
         return (
             StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Cannot delete the LJY Members team" })),
+            Json(json!({ "success": false, "message": "Cannot delete the LJY Members team" })),
         );
     }
 
-    match delete_team(&state.db, &user_email, &payload.team_name).await {
-        Ok(teams) => (
+    match delete_team(&state.db, &user_email, &team_name).await {
+        Ok(_) => (
             StatusCode::OK,
-            Json(json!({ "success": true, "teams": teams })),
+            Json(json!({ "success": true, "message": "Team deleted successfully" })),
         ),
         Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": e })),
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "success": false, "message": e })),
         ),
     }
 }
+
+
