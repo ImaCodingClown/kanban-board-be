@@ -60,7 +60,7 @@ pub async fn get_team(db: &Client, team_name: &str) -> Result<Option<Team>, Stri
 
 pub async fn get_user_teams(db: &Client, email: &str) -> Result<Vec<Team>, String> {
     let users = db.database("general").collection::<User>("users");
-    let teams = db.database("general").collection::<Team>("teams");
+    let _teams = db.database("general").collection::<Team>("teams");
 
     let user = users
         .find_one(doc! { "email": email })
