@@ -3,13 +3,11 @@ use crate::models::teams::{CreateTeamPayload, UpdateTeamPayload, AddMemberPayloa
 use crate::services::teams::{create_team, get_team, get_user_teams, update_team, add_member, remove_member, leave_team, delete_team};
 use crate::utils::jwt::AuthBearer;
 use axum::{extract::{Path, State}, http::StatusCode, response::IntoResponse, routing::{get, post, put, delete}, Json, Router};
-use serde_json::json;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", post(handle_create_team))
         .route("/", get(handle_get_user_teams))
-
         .route("/{team_name}", get(handle_get_team))
         .route("/{team_name}", put(handle_update_team))
         .route("/{team_name}", delete(handle_delete_team))
@@ -29,7 +27,7 @@ async fn handle_create_team(
             Json(TeamResponse {
                 success: true,
                 team: Some(team),
-                message: "Team created successfully".to_string(),
+                message: Some("Team created successfully".to_string()),
             }),
         ),
         Err(e) => (
@@ -37,7 +35,7 @@ async fn handle_create_team(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: e,
+                message: Some(e),
             }),
         ),
     }
@@ -54,7 +52,7 @@ async fn handle_get_team(
             Json(TeamResponse {
                 success: true,
                 team: Some(team),
-                message: "Team retrieved successfully".to_string(),
+                message: Some("Team retrieved successfully".to_string()),
             }),
         ),
         Ok(None) => (
@@ -62,7 +60,7 @@ async fn handle_get_team(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: "Team not found".to_string(),
+                message: Some("Team not found".to_string()),
             }),
         ),
         Err(e) => (
@@ -70,7 +68,7 @@ async fn handle_get_team(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: e,
+                message: Some(e),
             }),
         ),
     }
@@ -86,7 +84,7 @@ async fn handle_get_user_teams(
             Json(TeamsResponse {
                 success: true,
                 teams,
-                message: "User teams retrieved successfully".to_string(),
+                message: Some("User teams retrieved successfully".to_string()),
             }),
         ),
         Err(e) => (
@@ -94,7 +92,7 @@ async fn handle_get_user_teams(
             Json(TeamsResponse {
                 success: false,
                 teams: vec![],
-                message: e,
+                message: Some(e),
             }),
         ),
     }
@@ -112,7 +110,7 @@ async fn handle_update_team(
             Json(TeamResponse {
                 success: true,
                 team: Some(team),
-                message: "Team updated successfully".to_string(),
+                message: Some("Team updated successfully".to_string()),
             }),
         ),
         Err(e) => (
@@ -120,7 +118,7 @@ async fn handle_update_team(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: e,
+                message: Some(e),
             }),
         ),
     }
@@ -138,7 +136,7 @@ async fn handle_add_member(
             Json(TeamResponse {
                 success: true,
                 team: Some(team),
-                message: "Member added successfully".to_string(),
+                message: Some("Member added successfully".to_string()),
             }),
         ),
         Err(e) => (
@@ -146,7 +144,7 @@ async fn handle_add_member(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: e,
+                message: Some(e),
             }),
         ),
     }
@@ -164,7 +162,7 @@ async fn handle_remove_member(
             Json(TeamResponse {
                 success: true,
                 team: Some(team),
-                message: "Member removed successfully".to_string(),
+                message: Some("Member removed successfully".to_string()),
             }),
         ),
         Err(e) => (
@@ -172,7 +170,7 @@ async fn handle_remove_member(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: e,
+                message: Some(e),
             }),
         ),
     }
@@ -184,13 +182,19 @@ async fn handle_leave_team(
     Path(team_name): Path<String>,
 ) -> impl IntoResponse {
     match leave_team(&state.db, &user_email, &team_name).await {
-        Ok(_) => (
+        Ok(()) => (
             StatusCode::OK,
-            Json(json!({ "success": true, "message": "Left team successfully" })),
+            Json(serde_json::json!({
+                "success": true,
+                "message": "Successfully left the team"
+            })),
         ),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            Json(json!({ "success": false, "message": e })),
+            Json(serde_json::json!({
+                "success": false,
+                "message": e
+            })),
         ),
     }
 }
@@ -200,23 +204,20 @@ async fn handle_delete_team(
     AuthBearer(user_email): AuthBearer,
     Path(team_name): Path<String>,
 ) -> impl IntoResponse {
-    if team_name == "LJY Members" {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(json!({ "success": false, "message": "Cannot delete the LJY Members team" })),
-        );
-    }
-
     match delete_team(&state.db, &user_email, &team_name).await {
-        Ok(_) => (
+        Ok(()) => (
             StatusCode::OK,
-            Json(json!({ "success": true, "message": "Team deleted successfully" })),
+            Json(serde_json::json!({
+                "success": true,
+                "message": "Team deleted successfully"
+            })),
         ),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            Json(json!({ "success": false, "message": e })),
+            Json(serde_json::json!({
+                "success": false,
+                "message": e
+            })),
         ),
     }
 }
-
-

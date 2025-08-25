@@ -1,6 +1,7 @@
 use crate::db::mongo::{MongoService, ODM};
 use crate::models::users::User;
 use crate::services::board::{get_board_by_team};
+use crate::services::teams::add_user_to_ljy_team;
 use crate::utils::errors::CustomError;
 use crate::utils::jwt::{JWTMethods, JWTValidator};
 use bcrypt::{hash, verify};
@@ -22,9 +23,14 @@ pub async fn signup(
         return Err("Username/email already in use.".into());
     }
 
-    user_service.save_one(&user).await?;
+    let save_result = user_service.save_one(&user).await?;
+    let user_id = save_result.inserted_id.as_object_id().ok_or("Failed to get user ID after save")?;
 
     let _ = get_board_by_team("LJY Members".to_string(), db).await;
+
+    if let Err(_) = add_user_to_ljy_team(db, user_id, &email).await {
+        // Silently continue if team addition fails
+    }
 
     Ok(JWTValidator::create_jwt(&email, secret))
 }

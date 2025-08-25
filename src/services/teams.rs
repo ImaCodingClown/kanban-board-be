@@ -1,4 +1,4 @@
-use crate::models::{teams::{Team, CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload}, users::User, cards::Board};
+use crate::models::{teams::{Team, CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload, TeamRole}, users::User, cards::Board};
 use mongodb::{bson::{doc, oid::ObjectId}, Client};
 
 
@@ -47,11 +47,34 @@ pub async fn create_team(db: &Client, email: &str, payload: CreateTeamPayload) -
     Ok(created_team)
 }
 
+pub async fn add_user_to_team(db: &Client, team_name: &str, user_id: ObjectId, role: TeamRole) -> Result<(), String> {
+    let teams = db.database("general").collection::<Team>("teams");
+    
+    let mut team = teams
+        .find_one(doc! { "name": team_name })
+        .await
+        .map_err(|e| format!("Failed to find team {}: {}", team_name, e))?
+        .ok_or_else(|| format!("Team {} not found", team_name))?;
+
+    team.add_member(user_id, role);
+
+    let _result = teams
+        .replace_one(doc! { "name": team_name }, &team)
+        .await
+        .map_err(|e| format!("Failed to update team {}: {}", team_name, e))?;
+
+    Ok(())
+}
+
+pub async fn add_user_to_ljy_team(db: &Client, user_id: ObjectId, _email: &str) -> Result<(), String> {
+    add_user_to_team(db, "LJY Members", user_id, TeamRole::Collaborator).await
+}
+
 pub async fn get_team(db: &Client, team_name: &str) -> Result<Option<Team>, String> {
     let teams = db.database("general").collection::<Team>("teams");
     
     let team = teams
-        .find_one(doc! { "name": team_name, "is_active": true })
+        .find_one(doc! { "name": team_name })
         .await
         .map_err(|e| format!("Failed to get team: {e}"))?;
 
@@ -60,7 +83,7 @@ pub async fn get_team(db: &Client, team_name: &str) -> Result<Option<Team>, Stri
 
 pub async fn get_user_teams(db: &Client, email: &str) -> Result<Vec<Team>, String> {
     let users = db.database("general").collection::<User>("users");
-    let _teams = db.database("general").collection::<Team>("teams");
+    let teams = db.database("general").collection::<Team>("teams");
 
     let user = users
         .find_one(doc! { "email": email })
@@ -72,20 +95,13 @@ pub async fn get_user_teams(db: &Client, email: &str) -> Result<Vec<Team>, Strin
     let mut user_teams = Vec::new();
 
     for team_name in &user.teams {
-        if let Some(team) = get_team(db, team_name).await? {
+        let team = teams
+            .find_one(doc! { "name": team_name })
+            .await
+            .map_err(|e| format!("Failed to find team {}: {}", team_name, e))?;
+
+        if let Some(team) = team {
             user_teams.push(team);
-        } else {
-            let legacy_team = Team {
-                id: None,
-                name: team_name.clone(),
-                description: Some("Legacy team".to_string()),
-                leader_id: ObjectId::new(),
-                members: vec![],
-                created_at: chrono::Utc::now(),
-                updated_at: chrono::Utc::now(),
-                is_active: false,
-            };
-            user_teams.push(legacy_team);
         }
     }
 
@@ -130,8 +146,6 @@ pub async fn update_team(db: &Client, email: &str, team_name: &str, payload: Upd
     if let Some(description) = &payload.description {
         team.description = Some(description.clone());
     }
-
-    team.updated_at = chrono::Utc::now();
 
     let _update_result = teams
         .replace_one(doc! { "name": team_name }, &team)
@@ -341,5 +355,3 @@ pub async fn delete_team(db: &Client, email: &str, team_name: &str) -> Result<()
 
     Ok(())
 }
-
-
