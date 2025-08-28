@@ -17,14 +17,6 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(team: String) -> Self {
-        Self {
-            id: None,
-            team,
-            iteration: None,
-            columns: Vec::new(),
-        }
-    }
     pub fn create_default(team: String) -> Self {
         Self {
             id: None,

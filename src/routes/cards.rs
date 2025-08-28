@@ -54,13 +54,13 @@ pub async fn handle_delete_card(
     State(state): State<AppState>,
     Json(payload): Json<DeleteCardPayload>,
 ) -> impl IntoResponse {
-
     match delete_card(payload, &state.db).await {
         Ok(_) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
-        ).into_response(),
+        )
+            .into_response(),
     }
 }
 
@@ -73,6 +73,7 @@ pub async fn handle_edit_card(
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
-        ).into_response(),
+        )
+            .into_response(),
     }
 }

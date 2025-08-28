@@ -37,18 +37,24 @@ impl FromRequestParts<AppState> for AuthBearer {
             .headers
             .get("Authorization")
             .and_then(|h| h.to_str().ok())
-            .ok_or((StatusCode::UNAUTHORIZED, "Missing token".into()))?;
+            .ok_or_else(|| {
+                (StatusCode::UNAUTHORIZED, "Missing token".into())
+            })?;
 
         let token = auth_header
             .strip_prefix("Bearer ")
-            .ok_or((StatusCode::UNAUTHORIZED, "Invalid token format".into()))?;
+            .ok_or_else(|| {
+                (StatusCode::UNAUTHORIZED, "Invalid token format".into())
+            })?;
 
         let decoded = decode::<Claims>(
             token,
             &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
             &Validation::default(),
         )
-        .map_err(|_| (StatusCode::UNAUTHORIZED, "Invalid or expired token".into()))?;
+        .map_err(|e| {
+            (StatusCode::UNAUTHORIZED, "Invalid or expired token".into())
+        })?;
 
         Ok(AuthBearer(decoded.claims.sub))
     }
