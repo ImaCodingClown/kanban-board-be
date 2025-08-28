@@ -66,6 +66,7 @@ pub struct AddCardPayload {
     pub description: Option<String>,
     pub column_name: String,
     pub story_point: Option<u8>,
+    pub assignee: Option<String>,
     pub team: String,
 }
 
@@ -83,6 +84,7 @@ pub struct EditCardPayload {
     pub description: String,
     pub column_name: String,
     pub story_point: Option<u8>,
+    pub assignee: String,
     pub team: String,
 }
 

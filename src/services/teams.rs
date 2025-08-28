@@ -23,7 +23,7 @@ pub async fn create_team(db: &Client, email: &str, payload: CreateTeamPayload) -
     }
 
     let team_name = payload.name.clone();
-    let team = Team::new(payload.name, payload.description, user.id.unwrap());
+    let team = Team::new(payload.name, payload.description, user.id.unwrap(), user.username);
 
     let result = teams
         .insert_one(&team)
@@ -47,7 +47,7 @@ pub async fn create_team(db: &Client, email: &str, payload: CreateTeamPayload) -
     Ok(created_team)
 }
 
-pub async fn add_user_to_team(db: &Client, team_name: &str, user_id: ObjectId, role: TeamRole) -> Result<(), String> {
+pub async fn add_user_to_team(db: &Client, team_name: &str, user_id: ObjectId, username: String, role: TeamRole) -> Result<(), String> {
     let teams = db.database("general").collection::<Team>("teams");
     
     let mut team = teams
@@ -56,7 +56,7 @@ pub async fn add_user_to_team(db: &Client, team_name: &str, user_id: ObjectId, r
         .map_err(|e| format!("Failed to find team {}: {}", team_name, e))?
         .ok_or_else(|| format!("Team {} not found", team_name))?;
 
-    team.add_member(user_id, role);
+    team.add_member(user_id, username, role);
 
     let _result = teams
         .replace_one(doc! { "name": team_name }, &team)
@@ -66,8 +66,8 @@ pub async fn add_user_to_team(db: &Client, team_name: &str, user_id: ObjectId, r
     Ok(())
 }
 
-pub async fn add_user_to_ljy_team(db: &Client, user_id: ObjectId, _email: &str) -> Result<(), String> {
-    add_user_to_team(db, "LJY Members", user_id, TeamRole::Collaborator).await
+pub async fn add_user_to_ljy_team(db: &Client, user_id: ObjectId, username: String, _email: &str) -> Result<(), String> {
+    add_user_to_team(db, "LJY Members", user_id, username, TeamRole::Collaborator).await
 }
 
 pub async fn get_team(db: &Client, team_name: &str) -> Result<Option<Team>, String> {
@@ -187,7 +187,7 @@ pub async fn add_member(db: &Client, email: &str, team_name: &str, payload: AddM
         return Err("User is already a member of this team".to_string());
     }
 
-    team.add_member(new_member.id.unwrap(), payload.role.clone());
+    team.add_member(new_member.id.unwrap(), payload.username, payload.role.clone());
 
     let _update_result = teams
         .replace_one(doc! { "name": team_name }, &team)

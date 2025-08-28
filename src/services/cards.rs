@@ -23,7 +23,7 @@ pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, Cust
         id: Some(ObjectId::new()),
         title: payload.title,
         description: payload.description,
-        assignee: None,
+        assignee: payload.assignee,
         story_point: payload.story_point,
         priority: None,
     };
@@ -105,6 +105,7 @@ pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, Cu
 
         card.title = payload.title.clone();
         card.description = Some(payload.description.clone());
+        card.assignee = Some(payload.assignee.clone());
         card.story_point = payload.story_point.clone();
     }
 

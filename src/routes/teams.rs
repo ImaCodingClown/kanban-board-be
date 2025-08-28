@@ -86,6 +86,7 @@ async fn handle_get_user_teams(
                 teams,
                 message: Some("User teams retrieved successfully".to_string()),
             }),
+        
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,

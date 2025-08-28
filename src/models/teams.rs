@@ -11,6 +11,7 @@ pub enum TeamRole {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TeamMember {
     pub user_id: ObjectId,
+    pub username: String,
     pub role: TeamRole,
     pub joined_at: DateTime<Utc>,
     pub permissions: Vec<String>,
@@ -27,9 +28,10 @@ pub struct Team {
 }
 
 impl Team {
-    pub fn new(name: String, description: Option<String>, leader_id: ObjectId) -> Self {
+    pub fn new(name: String, description: Option<String>, leader_id: ObjectId, username: String) -> Self {
         let leader_member = TeamMember {
             user_id: leader_id,
+            username: username,
             role: TeamRole::Leader,
             joined_at: chrono::Utc::now(),
             permissions: vec!["read".to_string(), "write".to_string(), "delete".to_string(), "manage_members".to_string()],
@@ -44,7 +46,7 @@ impl Team {
         }
     }
 
-    pub fn add_member(&mut self, user_id: ObjectId, role: TeamRole) {
+    pub fn add_member(&mut self, user_id: ObjectId, username: String, role: TeamRole) {
         let permissions = match role {
             TeamRole::Leader => vec!["read".to_string(), "write".to_string(), "delete".to_string(), "manage_members".to_string()],
             TeamRole::Collaborator => vec!["read".to_string(), "write".to_string()],
@@ -52,6 +54,7 @@ impl Team {
 
         let member = TeamMember {
             user_id,
+            username,
             role,
             joined_at: chrono::Utc::now(),
             permissions,
@@ -110,6 +113,7 @@ pub struct UpdateTeamPayload {
 
 #[derive(Debug, Deserialize)]
 pub struct AddMemberPayload {
+    pub username: String,
     pub user_email: String,
     pub role: TeamRole,
 }
