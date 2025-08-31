@@ -35,7 +35,7 @@ async fn handle_create_team(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -68,7 +68,7 @@ async fn handle_get_team(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -92,7 +92,7 @@ async fn handle_get_user_teams(
             Json(TeamsResponse {
                 success: false,
                 teams: vec![],
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -118,7 +118,7 @@ async fn handle_update_team(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -144,7 +144,7 @@ async fn handle_add_member(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -170,7 +170,7 @@ async fn handle_remove_member(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -193,7 +193,7 @@ async fn handle_leave_team(
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({
                 "success": false,
-                "message": e
+                "message": e.to_string()
             })),
         ),
     }
@@ -216,7 +216,7 @@ async fn handle_delete_team(
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({
                 "success": false,
-                "message": e
+                "message": e.to_string()
             })),
         ),
     }
