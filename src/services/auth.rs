@@ -9,6 +9,8 @@ use bcrypt::{hash, verify};
 use mongodb::{bson::doc, Client, Collection};
 use chrono::Utc;
 
+const MAX_SESSIONS_PER_USER: usize = 3;
+
 pub async fn signup(
     username: String,
     email: String,
@@ -63,6 +65,12 @@ pub async fn login(
 
     if let Some(user) = user_opt {
         if verify(password, &user.password_hash).map_err(|e| CustomError::Server(format!("Password verification failed: {}", e)))? {
+            let active_sessions = count_active_sessions(&user.email, db).await?;
+            
+            if active_sessions >= MAX_SESSIONS_PER_USER {
+                remove_oldest_session(&user.email, db).await?;
+            }
+            
             let (access_token, refresh_token) = JWTValidator::create_jwt(&user.email, secret);
             let _ = save_refresh_token(&user.email, &refresh_token, db).await
                 .map_err(|e| CustomError::Database(format!("Failed to save refresh token: {}", e)))?;
@@ -107,6 +115,16 @@ pub async fn refresh_access_token(
     })
 }
 
+pub async fn logout(_user_email: &str, refresh_token: &str, db: &Client) -> Result<(), CustomError> {
+    let refresh_tokens: Collection<RefreshToken> = db.database("general").collection("refresh_tokens");
+    
+    let token_hash = JWTValidator::hash_refresh_token(refresh_token);
+    refresh_tokens.delete_one(doc! { "token_hash": &token_hash }).await
+        .map_err(|e| CustomError::Database(format!("Failed to delete refresh token: {}", e)))?;
+    
+    Ok(())
+}
+
 async fn save_refresh_token(user_email: &str, refresh_token: &str, db: &Client) -> Result<(), String> {
     let refresh_tokens: Collection<RefreshToken> = db.database("general").collection("refresh_tokens");
     
@@ -126,6 +144,42 @@ async fn save_refresh_token(user_email: &str, refresh_token: &str, db: &Client) 
         .insert_one(&refresh_token_doc)
         .await
         .map_err(|_| "Failed to save refresh token".to_string())?;
+    
+    Ok(())
+}
+
+async fn count_active_sessions(user_email: &str, db: &Client) -> Result<usize, CustomError> {
+    let refresh_tokens: Collection<RefreshToken> = db.database("general").collection("refresh_tokens");
+    let now = Utc::now().timestamp();
+    
+    let count = refresh_tokens.count_documents(
+        doc! { 
+            "user_email": user_email,
+            "expires_at": { "$gt": now }
+        }
+    ).await.map_err(|e| CustomError::Database(format!("Error counting active sessions: {}", e)))?;
+    
+    Ok(count as usize)
+}
+
+async fn remove_oldest_session(user_email: &str, db: &Client) -> Result<(), CustomError> {
+    let refresh_tokens: Collection<RefreshToken> = db.database("general").collection("refresh_tokens");
+    let now = Utc::now().timestamp();
+    
+    // Find and delete the oldest active session (sorted by created_at ascending)
+    let oldest_token = refresh_tokens
+        .find_one_and_delete(
+            doc! { 
+                "user_email": user_email,
+                "expires_at": { "$gt": now }
+            }
+        )
+        .sort(doc! { "created_at": 1 })  
+        .await
+        .map_err(|e| CustomError::Database(format!("Error removing oldest session: {}", e)))?;
+    
+    if oldest_token.is_none() {
+    }
     
     Ok(())
 }

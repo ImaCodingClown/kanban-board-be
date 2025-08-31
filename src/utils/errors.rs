@@ -24,7 +24,6 @@ pub enum CustomError {
     NotFound(String),
     Conflict(String),
     MongoError(mongodb::error::Error),
-    CustomError(String),
 }
 
 impl CustomError {
@@ -36,7 +35,6 @@ impl CustomError {
             CustomError::NotFound(_) => StatusCode::NOT_FOUND,
             CustomError::Conflict(_) => StatusCode::CONFLICT,
             CustomError::MongoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            CustomError::CustomError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -78,12 +76,6 @@ impl CustomError {
                 Some(err.to_string()),
                 None,
             ),
-            CustomError::CustomError(msg) => (
-                "SERVER_ERROR".to_string(),
-                "An error occurred".to_string(),
-                Some(msg.clone()),
-                None,
-            ),
         };
 
         ErrorResponse {
@@ -108,7 +100,6 @@ impl std::fmt::Display for CustomError {
             CustomError::NotFound(msg) => write!(f, "Not found: {}", msg),
             CustomError::Conflict(msg) => write!(f, "Conflict: {}", msg),
             CustomError::MongoError(err) => write!(f, "MongoDB error: {}", err),
-            CustomError::CustomError(msg) => write!(f, "Custom error: {}", msg),
         }
     }
 }
