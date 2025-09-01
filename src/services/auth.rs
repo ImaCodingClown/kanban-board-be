@@ -6,10 +6,40 @@ use crate::services::teams::add_user_to_ljy_team;
 use crate::utils::errors::CustomError;
 use crate::utils::jwt::{JWTMethods, JWTValidator};
 use bcrypt::{hash, verify};
-use mongodb::{bson::doc, Client, Collection};
+use mongodb::{bson::doc, Client, Collection, IndexModel};
 use chrono::Utc;
+use tokio;
+
+use futures::StreamExt;
 
 const MAX_SESSIONS_PER_USER: usize = 3;
+
+pub async fn create_performance_indexes(db: &Client) -> Result<(), CustomError> {
+    let users: Collection<User> = db.database("general").collection("users");
+    let refresh_tokens: Collection<RefreshToken> = db.database("general").collection("refresh_tokens");
+    
+    users.create_index(
+        IndexModel::builder().keys(doc! { "username": 1 }).build()
+    ).await.map_err(|e| CustomError::Database(format!("Failed to create username index: {}", e)))?;
+    
+    users.create_index(
+        IndexModel::builder().keys(doc! { "email": 1 }).build()
+    ).await.map_err(|e| CustomError::Database(format!("Failed to create email index: {}", e)))?;
+    
+    users.create_index(
+        IndexModel::builder().keys(doc! { "username": 1, "email": 1 }).build()
+    ).await.map_err(|e| CustomError::Database(format!("Failed to create compound index: {}", e)))?;
+    
+    refresh_tokens.create_index(
+        IndexModel::builder().keys(doc! { "user_email": 1, "expires_at": 1 }).build()
+    ).await.map_err(|e| CustomError::Database(format!("Failed to create user_email_expires index: {}", e)))?;
+    
+    refresh_tokens.create_index(
+        IndexModel::builder().keys(doc! { "token_hash": 1 }).build()
+    ).await.map_err(|e| CustomError::Database(format!("Failed to create token_hash index: {}", e)))?;
+    
+    Ok(())
+}
 
 pub async fn signup(
     username: String,
@@ -65,21 +95,22 @@ pub async fn login(
 
     if let Some(user) = user_opt {
         if verify(password, &user.password_hash).map_err(|e| CustomError::Server(format!("Password verification failed: {}", e)))? {
-            let active_sessions = count_active_sessions(&user.email, db).await?;
-            
-            if active_sessions >= MAX_SESSIONS_PER_USER {
-                remove_oldest_session(&user.email, db).await?;
-            }
             
             let (access_token, refresh_token) = JWTValidator::create_jwt(&user.email, secret);
-            let _ = save_refresh_token(&user.email, &refresh_token, db).await
-                .map_err(|e| CustomError::Database(format!("Failed to save refresh token: {}", e)))?;
-
-            return Ok(AuthResponse {
+            
+            let response = AuthResponse {
                 access_token,
-                refresh_token,
+                refresh_token: refresh_token.clone(),
                 expires_in: 12 * 60 * 60,
+            };
+
+            let user_email = user.email.clone();
+            let db_clone = db.clone();
+            tokio::spawn(async move {
+                let _ = manage_sessions_and_save_token(&user_email, &refresh_token, &db_clone).await;
             });
+
+            return Ok(response);
         }
     }
 
@@ -130,14 +161,13 @@ async fn save_refresh_token(user_email: &str, refresh_token: &str, db: &Client) 
     
     let token_hash = JWTValidator::hash_refresh_token(refresh_token);
     let now = Utc::now().timestamp();
-    let expires_at = now + (7 * 24 * 60 * 60); // 7 days from now
+    let expires_at = now + (30 * 24 * 60 * 60); // 30 days from now
     
     let refresh_token_doc = RefreshToken {
         id: mongodb::bson::oid::ObjectId::new(),
         user_email: user_email.to_string(),
         token_hash,
         expires_at,
-        created_at: now,
     };
     
     refresh_tokens
@@ -152,34 +182,63 @@ async fn count_active_sessions(user_email: &str, db: &Client) -> Result<usize, C
     let refresh_tokens: Collection<RefreshToken> = db.database("general").collection("refresh_tokens");
     let now = Utc::now().timestamp();
     
-    let count = refresh_tokens.count_documents(
-        doc! { 
+    let pipeline = vec![
+        doc! { "$match": { 
             "user_email": user_email,
             "expires_at": { "$gt": now }
-        }
-    ).await.map_err(|e| CustomError::Database(format!("Error counting active sessions: {}", e)))?;
+        }},
+        doc! { "$count": "active_sessions" }
+    ];
     
-    Ok(count as usize)
+    let mut cursor = refresh_tokens.aggregate(pipeline).await
+        .map_err(|e| CustomError::Database(format!("Error counting sessions: {}", e)))?;
+    
+    if let Some(result) = cursor.next().await {
+        let count_doc: mongodb::bson::Document = result.map_err(|e| CustomError::Database(format!("Error parsing count: {}", e)))?;
+        Ok(count_doc.get_i32("active_sessions").unwrap_or(0) as usize)
+    } else {
+        Ok(0)
+    }
 }
 
 async fn remove_oldest_session(user_email: &str, db: &Client) -> Result<(), CustomError> {
     let refresh_tokens: Collection<RefreshToken> = db.database("general").collection("refresh_tokens");
     let now = Utc::now().timestamp();
     
-    // Find and delete the oldest active session (sorted by created_at ascending)
-    let oldest_token = refresh_tokens
-        .find_one_and_delete(
-            doc! { 
-                "user_email": user_email,
-                "expires_at": { "$gt": now }
-            }
-        )
-        .sort(doc! { "created_at": 1 })  
-        .await
-        .map_err(|e| CustomError::Database(format!("Error removing oldest session: {}", e)))?;
+    let pipeline = vec![
+        doc! { "$match": { 
+            "user_email": user_email,
+            "expires_at": { "$gt": now }
+        }},
+        doc! { "$sort": { "_id": 1 } },
+        doc! { "$limit": 1 },
+        doc! { "$project": { "_id": 1 } }
+    ];
     
-    if oldest_token.is_none() {
+    let mut cursor = refresh_tokens.aggregate(pipeline).await
+        .map_err(|e| CustomError::Database(format!("Error finding oldest session: {}", e)))?;
+    
+    if let Some(result) = cursor.next().await {
+        let doc: mongodb::bson::Document = result.map_err(|e| CustomError::Database(format!("Error parsing document: {}", e)))?;
+        if let Ok(id) = doc.get_object_id("_id") {
+            refresh_tokens.delete_one(doc! { "_id": id }).await
+                .map_err(|e| CustomError::Database(format!("Error deleting oldest session: {}", e)))?;
+        }
     }
     
     Ok(())
 }
+
+async fn manage_sessions_and_save_token(user_email: &str, refresh_token: &str, db: &Client) -> Result<(), CustomError> {
+    let active_sessions = count_active_sessions(user_email, db).await?;
+    
+    if active_sessions >= MAX_SESSIONS_PER_USER {
+        remove_oldest_session(user_email, db).await?;
+    }
+    
+    save_refresh_token(user_email, refresh_token, db).await
+        .map_err(|e| CustomError::Database(format!("Failed to save refresh token: {}", e)))?;
+    
+    Ok(())
+}
+

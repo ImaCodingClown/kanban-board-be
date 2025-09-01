@@ -14,7 +14,6 @@ pub struct RefreshToken {
     pub user_email: String,
     pub token_hash: String,
     pub expires_at: i64,
-    pub created_at: i64,
 }
 
 #[derive(Deserialize)]
