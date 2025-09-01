@@ -68,7 +68,7 @@ pub async fn signup(
     if let Err(_) = add_user_to_ljy_team(db, user_id, &email).await {
         // Silently continue if team addition fails
     }
-
+  
     let (access_token, refresh_token) = JWTValidator::create_jwt(&email, secret);
     let _ = save_refresh_token(&email, &refresh_token, db).await
         .map_err(|e| CustomError::Database(format!("Failed to save refresh token: {}", e)))?;
@@ -228,7 +228,6 @@ async fn remove_oldest_session(user_email: &str, db: &Client) -> Result<(), Cust
     
     Ok(())
 }
-
 async fn manage_sessions_and_save_token(user_email: &str, refresh_token: &str, db: &Client) -> Result<(), CustomError> {
     let active_sessions = count_active_sessions(user_email, db).await?;
     
@@ -241,4 +240,3 @@ async fn manage_sessions_and_save_token(user_email: &str, refresh_token: &str, d
     
     Ok(())
 }
-

@@ -263,7 +263,6 @@ pub async fn remove_member(db: &Client, email: &str, team_name: &str, payload: R
         )
         .await
         .map_err(|e| CustomError::Database(format!("Failed to update member teams: {}", e)))?;
-
     Ok(team)
 }
 
@@ -309,10 +308,8 @@ pub async fn leave_team(db: &Client, email: &str, team_name: &str) -> Result<(),
         )
         .await
         .map_err(|e| CustomError::Database(format!("Failed to update user teams: {}", e)))?;
-
     Ok(())
 }
-
 pub async fn delete_team(db: &Client, email: &str, team_name: &str) -> Result<(), CustomError> {
     let users = db.database("general").collection::<User>("users");
     let teams = db.database("general").collection::<Team>("teams");

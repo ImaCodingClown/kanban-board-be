@@ -119,6 +119,7 @@ async fn handle_update_team(
                 success: false,
                 team: None,
                 message: Some(e.to_string()),
+
             }),
         ),
     }
