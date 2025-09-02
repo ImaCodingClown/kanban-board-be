@@ -1,4 +1,5 @@
 use crate::models::{teams::{Team, CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload, TeamRole}, users::User, cards::Board};
+use crate::services::user_info::get_user_by_username_or_email;
 use mongodb::{bson::{doc, oid::ObjectId}, Client};
 
 
@@ -166,12 +167,8 @@ pub async fn add_member(db: &Client, email: &str, team_name: &str, payload: AddM
 
     let leader = leader.ok_or_else(|| "Leader not found".to_string())?;
 
-    let new_member = users
-        .find_one(doc! { "email": &payload.user_email })
-        .await
-        .map_err(|e| format!("Failed to find new member: {e}"))?;
-
-    let new_member = new_member.ok_or_else(|| "New member not found".to_string())?;
+    let new_member = get_user_by_username_or_email(db, &payload.username).await?;
+    let new_member = new_member.ok_or_else(|| format!("User with username or email '{}' not found", &payload.username))?;
 
     let mut team = teams
         .find_one(doc! { "name": team_name })
@@ -200,7 +197,7 @@ pub async fn add_member(db: &Client, email: &str, team_name: &str, payload: AddM
         
         let _user_update_result = users
             .update_one(
-                doc! { "email": &payload.user_email },
+                doc! { "email": &new_member.email },
                 doc! { "$set": { "teams": &member_teams } },
             )
             .await

@@ -114,7 +114,6 @@ pub struct UpdateTeamPayload {
 #[derive(Debug, Deserialize)]
 pub struct AddMemberPayload {
     pub username: String,
-    pub user_email: String,
     pub role: TeamRole,
 }
 

@@ -3,3 +3,4 @@ pub mod board;
 pub mod cards;
 pub mod health;
 pub mod teams;
+pub mod users;
