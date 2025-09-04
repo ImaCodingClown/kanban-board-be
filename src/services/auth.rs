@@ -1,13 +1,13 @@
 use crate::db::mongo::{MongoService, ODM};
-use crate::models::auth::{AuthResponse, RefreshToken};
 use crate::models::users::User;
-use crate::services::board::get_board_by_team;
+use crate::models::auth::{RefreshToken, AuthResponse};
+use crate::services::board::{get_board_by_team};
 use crate::services::teams::add_user_to_ljy_team;
 use crate::utils::errors::CustomError;
 use crate::utils::jwt::{JWTMethods, JWTValidator};
 use bcrypt::{hash, verify};
+use mongodb::{bson::doc, Client, Collection};
 use chrono::Utc;
-use mongodb::{bson::doc, Client, Collection, IndexModel};
 use tokio;
 
 use futures::StreamExt;
