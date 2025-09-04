@@ -37,12 +37,12 @@ impl AppState {
         let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET not set");
 
         let db = db::mongo::db_client(&db_uri).await;
-        
-        if let Err(e) = create_performance_indexes(&db).await {
-            eprintln!("Failed to create performance indexes: {}", e);
-            std::process::exit(1);
+
+        match create_performance_indexes(&db).await {
+            Ok(_) => println!("Database indexes created successfully"),
+            Err(e) => eprintln!("Warning: Failed to create performance indexes: {}", e),
         }
-        
+
         AppState {
             environment,
             db,
