@@ -1,8 +1,21 @@
-use crate::models::{teams::{Team, CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload, TeamRole}, users::User, cards::Board};
+use crate::models::{
+    cards::Board,
+    teams::{
+        AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, Team, TeamRole, UpdateTeamPayload,
+    },
+    users::User,
+};
 use crate::utils::errors::CustomError;
-use mongodb::{bson::{doc, oid::ObjectId}, Client};
+use mongodb::{
+    bson::{doc, oid::ObjectId},
+    Client,
+};
 
-pub async fn create_team(db: &Client, email: &str, payload: CreateTeamPayload) -> Result<Team, CustomError> {
+pub async fn create_team(
+    db: &Client,
+    email: &str,
+    payload: CreateTeamPayload,
+) -> Result<Team, CustomError> {
     let users = db.database("general").collection::<User>("users");
     let teams = db.database("general").collection::<Team>("teams");
 
@@ -19,7 +32,9 @@ pub async fn create_team(db: &Client, email: &str, payload: CreateTeamPayload) -
         .map_err(|e| CustomError::Database(format!("Failed to check team existence: {}", e)))?;
 
     if existing_team.is_some() {
-        return Err(CustomError::Conflict("Team name already exists".to_string()));
+        return Err(CustomError::Conflict(
+            "Team name already exists".to_string(),
+        ));
     }
 
     let team_name = payload.name.clone();
@@ -47,9 +62,14 @@ pub async fn create_team(db: &Client, email: &str, payload: CreateTeamPayload) -
     Ok(created_team)
 }
 
-pub async fn add_user_to_team(db: &Client, team_name: &str, user_id: ObjectId, role: TeamRole) -> Result<(), CustomError> {
+pub async fn add_user_to_team(
+    db: &Client,
+    team_name: &str,
+    user_id: ObjectId,
+    role: TeamRole,
+) -> Result<(), CustomError> {
     let teams = db.database("general").collection::<Team>("teams");
-    
+
     let mut team = teams
         .find_one(doc! { "name": team_name })
         .await
@@ -61,18 +81,24 @@ pub async fn add_user_to_team(db: &Client, team_name: &str, user_id: ObjectId, r
     let _result = teams
         .replace_one(doc! { "name": team_name }, &team)
         .await
-        .map_err(|e| CustomError::Database(format!("Failed to update team {}: {}", team_name, e)))?;
+        .map_err(|e| {
+            CustomError::Database(format!("Failed to update team {}: {}", team_name, e))
+        })?;
 
     Ok(())
 }
 
-pub async fn add_user_to_ljy_team(db: &Client, user_id: ObjectId, _email: &str) -> Result<(), CustomError> {
+pub async fn add_user_to_ljy_team(
+    db: &Client,
+    user_id: ObjectId,
+    _email: &str,
+) -> Result<(), CustomError> {
     add_user_to_team(db, "LJY Members", user_id, TeamRole::Collaborator).await
 }
 
 pub async fn get_team(db: &Client, team_name: &str) -> Result<Option<Team>, CustomError> {
     let teams = db.database("general").collection::<Team>("teams");
-    
+
     let team = teams
         .find_one(doc! { "name": team_name })
         .await
@@ -98,7 +124,9 @@ pub async fn get_user_teams(db: &Client, email: &str) -> Result<Vec<Team>, Custo
         let team = teams
             .find_one(doc! { "name": team_name })
             .await
-            .map_err(|e| CustomError::Database(format!("Failed to find team {}: {}", team_name, e)))?;
+            .map_err(|e| {
+                CustomError::Database(format!("Failed to find team {}: {}", team_name, e))
+            })?;
 
         if let Some(team) = team {
             user_teams.push(team);
@@ -108,7 +136,12 @@ pub async fn get_user_teams(db: &Client, email: &str) -> Result<Vec<Team>, Custo
     Ok(user_teams)
 }
 
-pub async fn update_team(db: &Client, email: &str, team_name: &str, payload: UpdateTeamPayload) -> Result<Team, CustomError> {
+pub async fn update_team(
+    db: &Client,
+    email: &str,
+    team_name: &str,
+    payload: UpdateTeamPayload,
+) -> Result<Team, CustomError> {
     let users = db.database("general").collection::<User>("users");
     let teams = db.database("general").collection::<Team>("teams");
 
@@ -126,7 +159,9 @@ pub async fn update_team(db: &Client, email: &str, team_name: &str, payload: Upd
         .ok_or_else(|| CustomError::NotFound("Team not found".to_string()))?;
 
     if !team.is_leader(&user.id.unwrap()) {
-        return Err(CustomError::Authentication("Only team leader can update team".to_string()));
+        return Err(CustomError::Authentication(
+            "Only team leader can update team".to_string(),
+        ));
     }
 
     if let Some(new_name) = &payload.name {
@@ -134,10 +169,14 @@ pub async fn update_team(db: &Client, email: &str, team_name: &str, payload: Upd
             let existing_team = teams
                 .find_one(doc! { "name": new_name })
                 .await
-                .map_err(|e| CustomError::Database(format!("Failed to check team existence: {}", e)))?;
+                .map_err(|e| {
+                    CustomError::Database(format!("Failed to check team existence: {}", e))
+                })?;
 
             if existing_team.is_some() {
-                return Err(CustomError::Conflict("Team name already exists".to_string()));
+                return Err(CustomError::Conflict(
+                    "Team name already exists".to_string(),
+                ));
             }
         }
         team.name = new_name.clone();
@@ -155,7 +194,12 @@ pub async fn update_team(db: &Client, email: &str, team_name: &str, payload: Upd
     Ok(team)
 }
 
-pub async fn add_member(db: &Client, email: &str, team_name: &str, payload: AddMemberPayload) -> Result<Team, CustomError> {
+pub async fn add_member(
+    db: &Client,
+    email: &str,
+    team_name: &str,
+    payload: AddMemberPayload,
+) -> Result<Team, CustomError> {
     let users = db.database("general").collection::<User>("users");
     let teams = db.database("general").collection::<Team>("teams");
 
@@ -171,7 +215,8 @@ pub async fn add_member(db: &Client, email: &str, team_name: &str, payload: AddM
         .await
         .map_err(|e| CustomError::Database(format!("Failed to find new member: {}", e)))?;
 
-    let new_member = new_member.ok_or_else(|| CustomError::NotFound("New member not found".to_string()))?;
+    let new_member =
+        new_member.ok_or_else(|| CustomError::NotFound("New member not found".to_string()))?;
 
     let mut team = teams
         .find_one(doc! { "name": team_name })
@@ -180,11 +225,15 @@ pub async fn add_member(db: &Client, email: &str, team_name: &str, payload: AddM
         .ok_or_else(|| CustomError::NotFound("Team not found".to_string()))?;
 
     if !team.is_leader(&leader.id.unwrap()) {
-        return Err(CustomError::Authentication("Only team leader can add members".to_string()));
+        return Err(CustomError::Authentication(
+            "Only team leader can add members".to_string(),
+        ));
     }
 
     if team.is_member(&new_member.id.unwrap()) {
-        return Err(CustomError::Conflict("User is already a member of this team".to_string()));
+        return Err(CustomError::Conflict(
+            "User is already a member of this team".to_string(),
+        ));
     }
 
     team.add_member(new_member.id.unwrap(), payload.role.clone());
@@ -197,7 +246,7 @@ pub async fn add_member(db: &Client, email: &str, team_name: &str, payload: AddM
     let mut member_teams = new_member.teams;
     if !member_teams.contains(&team_name.to_string()) {
         member_teams.push(team_name.to_string());
-        
+
         let _user_update_result = users
             .update_one(
                 doc! { "email": &payload.user_email },
@@ -210,7 +259,12 @@ pub async fn add_member(db: &Client, email: &str, team_name: &str, payload: AddM
     Ok(team)
 }
 
-pub async fn remove_member(db: &Client, email: &str, team_name: &str, payload: RemoveMemberPayload) -> Result<Team, CustomError> {
+pub async fn remove_member(
+    db: &Client,
+    email: &str,
+    team_name: &str,
+    payload: RemoveMemberPayload,
+) -> Result<Team, CustomError> {
     let users = db.database("general").collection::<User>("users");
     let teams = db.database("general").collection::<Team>("teams");
 
@@ -226,7 +280,8 @@ pub async fn remove_member(db: &Client, email: &str, team_name: &str, payload: R
         .await
         .map_err(|e| CustomError::Database(format!("Failed to find member: {}", e)))?;
 
-    let member_to_remove = member_to_remove.ok_or_else(|| CustomError::NotFound("Member not found".to_string()))?;
+    let member_to_remove =
+        member_to_remove.ok_or_else(|| CustomError::NotFound("Member not found".to_string()))?;
 
     let mut team = teams
         .find_one(doc! { "name": team_name })
@@ -235,15 +290,21 @@ pub async fn remove_member(db: &Client, email: &str, team_name: &str, payload: R
         .ok_or_else(|| CustomError::NotFound("Team not found".to_string()))?;
 
     if !team.is_leader(&leader.id.unwrap()) {
-        return Err(CustomError::Authentication("Only team leader can remove members".to_string()));
+        return Err(CustomError::Authentication(
+            "Only team leader can remove members".to_string(),
+        ));
     }
 
     if !team.is_member(&member_to_remove.id.unwrap()) {
-        return Err(CustomError::NotFound("User is not a member of this team".to_string()));
+        return Err(CustomError::NotFound(
+            "User is not a member of this team".to_string(),
+        ));
     }
 
     if team.is_leader(&member_to_remove.id.unwrap()) {
-        return Err(CustomError::Conflict("Cannot remove team leader".to_string()));
+        return Err(CustomError::Conflict(
+            "Cannot remove team leader".to_string(),
+        ));
     }
 
     team.remove_member(&member_to_remove.id.unwrap());
@@ -284,11 +345,15 @@ pub async fn leave_team(db: &Client, email: &str, team_name: &str) -> Result<(),
         .ok_or_else(|| CustomError::NotFound("Team not found".to_string()))?;
 
     if !team.is_member(&user.id.unwrap()) {
-        return Err(CustomError::NotFound("User is not a member of this team".to_string()));
+        return Err(CustomError::NotFound(
+            "User is not a member of this team".to_string(),
+        ));
     }
 
     if team.is_leader(&user.id.unwrap()) {
-        return Err(CustomError::Conflict("Team leader cannot leave team. Transfer leadership or delete team instead".to_string()));
+        return Err(CustomError::Conflict(
+            "Team leader cannot leave team. Transfer leadership or delete team instead".to_string(),
+        ));
     }
 
     team.remove_member(&user.id.unwrap());
@@ -329,7 +394,9 @@ pub async fn delete_team(db: &Client, email: &str, team_name: &str) -> Result<()
         .ok_or_else(|| CustomError::NotFound("Team not found".to_string()))?;
 
     if !team.is_leader(&user.id.unwrap()) {
-        return Err(CustomError::Authentication("Only team leader can delete team".to_string()));
+        return Err(CustomError::Authentication(
+            "Only team leader can delete team".to_string(),
+        ));
     }
 
     let _board_result = boards

@@ -4,7 +4,7 @@ use axum::extract::FromRequestParts;
 use axum::http::{request::Parts, StatusCode};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 pub struct JWTValidator {}
@@ -17,15 +17,16 @@ pub trait JWTMethods {
             exp: (Utc::now() + Duration::hours(12)).timestamp() as usize,
             refresh_token_id: refresh_token_id.clone(),
         };
-        
+
         let access_token = encode(
             &Header::default(),
             &claims,
             &EncodingKey::from_secret(secret.as_bytes()),
-        ).unwrap();
+        )
+        .unwrap();
 
         let refresh_token = Uuid::new_v4().to_string();
-        
+
         (access_token, refresh_token)
     }
 
@@ -35,12 +36,13 @@ pub trait JWTMethods {
             exp: (Utc::now() + Duration::hours(12)).timestamp() as usize,
             refresh_token_id: refresh_token_id.to_owned(),
         };
-        
+
         encode(
             &Header::default(),
             &claims,
             &EncodingKey::from_secret(secret.as_bytes()),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     fn hash_refresh_token(token: &str) -> String {
@@ -66,14 +68,15 @@ impl FromRequestParts<AppState> for AuthBearer {
             .get("Authorization")
             .and_then(|h| h.to_str().ok())
             .ok_or_else(|| {
-                (StatusCode::UNAUTHORIZED, "Missing authorization header".into())
+                (
+                    StatusCode::UNAUTHORIZED,
+                    "Missing authorization header".into(),
+                )
             })?;
 
         let token = auth_header
             .strip_prefix("Bearer ")
-            .ok_or_else(|| {
-                (StatusCode::UNAUTHORIZED, "Invalid token format".into())
-            })?;
+            .ok_or_else(|| (StatusCode::UNAUTHORIZED, "Invalid token format".into()))?;
 
         let decoded = decode::<Claims>(
             token,
