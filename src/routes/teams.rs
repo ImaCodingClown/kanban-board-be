@@ -1,8 +1,20 @@
 use crate::config::AppState;
-use crate::models::teams::{CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload, TeamResponse, TeamsResponse};
-use crate::services::teams::{create_team, get_team, get_user_teams, update_team, add_member, remove_member, leave_team, delete_team};
+use crate::models::teams::{
+    AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, TeamResponse, TeamsResponse,
+    UpdateTeamPayload,
+};
+use crate::services::teams::{
+    add_member, create_team, delete_team, get_team, get_user_teams, leave_team, remove_member,
+    update_team,
+};
 use crate::utils::jwt::AuthBearer;
-use axum::{extract::{Path, State}, http::StatusCode, response::IntoResponse, routing::{get, post, put, delete}, Json, Router};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{delete, get, post, put},
+    Json, Router,
+};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -119,7 +131,6 @@ async fn handle_update_team(
                 success: false,
                 team: None,
                 message: Some(e.to_string()),
-
             }),
         ),
     }

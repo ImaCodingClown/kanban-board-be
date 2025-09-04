@@ -1,7 +1,7 @@
 use axum::Router;
 use config::AppState;
+use db::indexes::create_performance_indexes;
 use routes::{auth, board, cards, health, teams};
-use services::auth::create_performance_indexes;
 use tower_http::cors::{Any, CorsLayer};
 
 mod config;
@@ -14,12 +14,11 @@ mod utils;
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let state = AppState::build().await;
-    
-    match create_performance_indexes(&state.db).await {
-        Ok(_) => println!("Performance indexes created successfully"),
-        Err(e) => eprintln!("Failed to create performance indexes: {}", e),
+
+    if let Err(e) = create_performance_indexes(&state.db).await {
+        eprintln!("Failed to create performance indexes: {}", e);
     }
-    
+
     let app = create_app(state);
 
     println!("Server running at http://127.0.0.1:8080");

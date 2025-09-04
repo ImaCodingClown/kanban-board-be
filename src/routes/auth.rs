@@ -1,12 +1,13 @@
 use crate::config::AppState;
 use crate::models::auth::{AuthLoginPayload, AuthPayload, RefreshTokenPayload};
-use crate::services::auth::{login, signup, refresh_access_token, logout};
+use crate::services::auth::{login, logout, refresh_access_token, signup};
 use crate::services::user_info::get_user_by_email;
 use crate::utils::jwt::AuthBearer;
 use axum::{
     extract::State,
+    http::StatusCode,
     routing::{get, post},
-    Json, Router, http::StatusCode,
+    Json, Router,
 };
 use serde_json::json;
 
@@ -91,13 +92,7 @@ async fn handle_refresh(
     State(state): State<AppState>,
     Json(payload): Json<RefreshTokenPayload>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    match refresh_access_token(
-        payload.refresh_token,
-        &state.db,
-        &state.jwt_secret,
-    )
-    .await
-    {
+    match refresh_access_token(payload.refresh_token, &state.db, &state.jwt_secret).await {
         Ok(auth_response) => Ok(Json(json!({
             "success": true,
             "access_token": auth_response.access_token,
