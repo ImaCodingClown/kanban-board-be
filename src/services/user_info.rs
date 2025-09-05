@@ -26,14 +26,3 @@ pub async fn get_all_users(db: &Client) -> Result<Vec<User>, String> {
 
     Ok(users)
 }
-
-pub async fn get_user_by_username_or_email(db: &Client, username: &str) -> Result<Option<User>, String> {
-    let users = db.database("general").collection::<User>("users");
-    
-    let user = users
-        .find_one(doc! { "username": username })
-        .await
-        .map_err(|e| format!("Failed to find user: {e}"))?;
-
-    Ok(user)
-}

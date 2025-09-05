@@ -28,7 +28,7 @@ pub async fn signup(
 
     let _ = get_board_by_team("LJY Members".to_string(), db).await;
 
-    if let Err(_) = add_user_to_ljy_team(db, user_id, username, &email).await {
+    if let Err(_) = add_user_to_ljy_team(db, user_id, &email).await {
         // Silently continue if team addition fails
     }
 

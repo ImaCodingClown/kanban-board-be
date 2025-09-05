@@ -11,7 +11,6 @@ pub enum TeamRole {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TeamMember {
     pub user_id: ObjectId,
-    pub username: String,
     pub role: TeamRole,
     pub joined_at: DateTime<Utc>,
     pub permissions: Vec<String>,
@@ -28,10 +27,9 @@ pub struct Team {
 }
 
 impl Team {
-    pub fn new(name: String, description: Option<String>, leader_id: ObjectId, username: String) -> Self {
+    pub fn new(name: String, description: Option<String>, leader_id: ObjectId) -> Self {
         let leader_member = TeamMember {
             user_id: leader_id,
-            username: username,
             role: TeamRole::Leader,
             joined_at: chrono::Utc::now(),
             permissions: vec!["read".to_string(), "write".to_string(), "delete".to_string(), "manage_members".to_string()],
@@ -46,7 +44,7 @@ impl Team {
         }
     }
 
-    pub fn add_member(&mut self, user_id: ObjectId, username: String, role: TeamRole) {
+    pub fn add_member(&mut self, user_id: ObjectId, role: TeamRole) {
         let permissions = match role {
             TeamRole::Leader => vec!["read".to_string(), "write".to_string(), "delete".to_string(), "manage_members".to_string()],
             TeamRole::Collaborator => vec!["read".to_string(), "write".to_string()],
@@ -54,7 +52,6 @@ impl Team {
 
         let member = TeamMember {
             user_id,
-            username,
             role,
             joined_at: chrono::Utc::now(),
             permissions,
@@ -113,7 +110,7 @@ pub struct UpdateTeamPayload {
 
 #[derive(Debug, Deserialize)]
 pub struct AddMemberPayload {
-    pub username: String,
+    pub user_id: String,
     pub role: TeamRole,
 }
 
@@ -133,5 +130,34 @@ pub struct TeamResponse {
 pub struct TeamsResponse {
     pub success: bool,
     pub teams: Vec<Team>,
+    pub message: Option<String>,
+}
+
+// Separate models for frontend responses that include usernames
+#[derive(Debug, Serialize)]
+pub struct TeamMemberWithUsername {
+    pub user_id: String,
+    pub username: String,
+    pub role: String,
+    pub joined_at: String,
+    pub permissions: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TeamWithUsernames {
+    pub _id: Option<String>,
+    pub name: String,
+    pub description: Option<String>,
+    pub leader_id: String,
+    pub members: Vec<TeamMemberWithUsername>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub is_active: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TeamWithUsernamesResponse {
+    pub success: bool,
+    pub team: Option<TeamWithUsernames>,
     pub message: Option<String>,
 }
