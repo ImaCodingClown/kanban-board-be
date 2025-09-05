@@ -1,8 +1,20 @@
 use crate::config::AppState;
-use crate::models::teams::{CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload, TeamResponse, TeamsResponse};
-use crate::services::teams::{create_team, get_team, get_user_teams, update_team, add_member, remove_member, leave_team, delete_team};
+use crate::models::teams::{
+    AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, TeamResponse, TeamsResponse,
+    UpdateTeamPayload,
+};
+use crate::services::teams::{
+    add_member, create_team, delete_team, get_team, get_user_teams, leave_team, remove_member,
+    update_team,
+};
 use crate::utils::jwt::AuthBearer;
-use axum::{extract::{Path, State}, http::StatusCode, response::IntoResponse, routing::{get, post, put, delete}, Json, Router};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{delete, get, post, put},
+    Json, Router,
+};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -35,7 +47,7 @@ async fn handle_create_team(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -68,7 +80,7 @@ async fn handle_get_team(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -92,7 +104,7 @@ async fn handle_get_user_teams(
             Json(TeamsResponse {
                 success: false,
                 teams: vec![],
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -118,7 +130,7 @@ async fn handle_update_team(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -144,7 +156,7 @@ async fn handle_add_member(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -170,7 +182,7 @@ async fn handle_remove_member(
             Json(TeamResponse {
                 success: false,
                 team: None,
-                message: Some(e),
+                message: Some(e.to_string()),
             }),
         ),
     }
@@ -193,7 +205,7 @@ async fn handle_leave_team(
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({
                 "success": false,
-                "message": e
+                "message": e.to_string()
             })),
         ),
     }
@@ -216,7 +228,7 @@ async fn handle_delete_team(
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({
                 "success": false,
-                "message": e
+                "message": e.to_string()
             })),
         ),
     }

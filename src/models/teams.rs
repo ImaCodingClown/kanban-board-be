@@ -32,7 +32,12 @@ impl Team {
             user_id: leader_id,
             role: TeamRole::Leader,
             joined_at: chrono::Utc::now(),
-            permissions: vec!["read".to_string(), "write".to_string(), "delete".to_string(), "manage_members".to_string()],
+            permissions: vec![
+                "read".to_string(),
+                "write".to_string(),
+                "delete".to_string(),
+                "manage_members".to_string(),
+            ],
         };
 
         Team {
@@ -46,7 +51,12 @@ impl Team {
 
     pub fn add_member(&mut self, user_id: ObjectId, role: TeamRole) {
         let permissions = match role {
-            TeamRole::Leader => vec!["read".to_string(), "write".to_string(), "delete".to_string(), "manage_members".to_string()],
+            TeamRole::Leader => vec![
+                "read".to_string(),
+                "write".to_string(),
+                "delete".to_string(),
+                "manage_members".to_string(),
+            ],
             TeamRole::Collaborator => vec!["read".to_string(), "write".to_string()],
         };
 

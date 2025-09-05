@@ -13,6 +13,7 @@ mod utils;
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let state = AppState::build().await;
+
     let app = create_app(state);
 
     println!("Server running at http://127.0.0.1:8080");
