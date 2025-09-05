@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumString;
 
 use crate::db;
+use crate::db::indexes::create_performance_indexes;
 
 #[derive(Serialize, Deserialize, Debug, Clone, EnumString)]
 #[strum(serialize_all = "UPPERCASE")]
@@ -36,6 +37,12 @@ impl AppState {
         let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET not set");
 
         let db = db::mongo::db_client(&db_uri).await;
+
+        match create_performance_indexes(&db).await {
+            Ok(_) => println!("Database indexes created successfully"),
+            Err(e) => eprintln!("Warning: Failed to create performance indexes: {}", e),
+        }
+
         AppState {
             environment,
             db,

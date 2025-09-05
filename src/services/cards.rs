@@ -11,13 +11,13 @@ pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, Cust
 
     let board = boards
         .get_mut(0)
-        .ok_or_else(|| CustomError::CustomError("Board not found".to_string()))?;
+        .ok_or_else(|| CustomError::NotFound("Board not found".to_string()))?;
 
     let col = board
         .columns
         .iter_mut()
         .find(|c| c.title == payload.column_name)
-        .ok_or_else(|| CustomError::CustomError("Column not found".to_string()))?;
+        .ok_or_else(|| CustomError::NotFound("Column not found".to_string()))?;
 
     let card = Card {
         id: Some(ObjectId::new()),
@@ -43,7 +43,7 @@ pub async fn get_columns(team: &str, db: &Client) -> Result<Vec<String>, CustomE
 
     let board = boards
         .first()
-        .ok_or_else(|| CustomError::CustomError("Board not found".to_string()))?;
+        .ok_or_else(|| CustomError::NotFound("Board not found".to_string()))?;
 
     let column_titles = board.columns.iter().map(|c| c.title.clone()).collect();
 
@@ -56,23 +56,23 @@ pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), 
 
     let board = boards
         .get_mut(0)
-        .ok_or_else(|| CustomError::CustomError("Board not found".to_string()))?;
+        .ok_or_else(|| CustomError::NotFound("Board not found".to_string()))?;
 
     let card_oid = ObjectId::parse_str(&payload.card_id)
-        .map_err(|_| CustomError::CustomError("Invalid card ID".into()))?;
+        .map_err(|_| CustomError::NotFound("Invalid card ID".to_string()))?;
 
     let col = board
         .columns
         .iter_mut()
         .find(|c| c.title == payload.column_name)
-        .ok_or_else(|| CustomError::CustomError("Column not found".to_string()))?;
+        .ok_or_else(|| CustomError::NotFound("Column not found".to_string()))?;
 
     col.cards.retain(|card| card.id != Some(card_oid));
 
     let board_id = board
         .id
         .clone()
-        .ok_or_else(|| CustomError::CustomError("Missing board ID".into()))?;
+        .ok_or_else(|| CustomError::NotFound("Missing board ID".to_string()))?;
 
     board_service.replace_one(board, &board_id).await?;
 
@@ -85,23 +85,23 @@ pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, Cu
 
     let board = boards
         .get_mut(0)
-        .ok_or_else(|| CustomError::CustomError("Board not found".to_string()))?;
+        .ok_or_else(|| CustomError::NotFound("Board not found".to_string()))?;
 
     let card_oid = ObjectId::parse_str(&payload.card_id)
-        .map_err(|_| CustomError::CustomError("Invalid card ID".to_string()))?;
+        .map_err(|_| CustomError::NotFound("Invalid card ID".to_string()))?;
 
     {
         let column = board
             .columns
             .iter_mut()
             .find(|col| col.title == payload.column_name)
-            .ok_or_else(|| CustomError::CustomError("Column not found".to_string()))?;
+            .ok_or_else(|| CustomError::NotFound("Column not found".to_string()))?;
 
         let card = column
             .cards
             .iter_mut()
             .find(|card| card.id == Some(card_oid))
-            .ok_or_else(|| CustomError::CustomError("Card not found".to_string()))?;
+            .ok_or_else(|| CustomError::NotFound("Card not found".to_string()))?;
 
         card.title = payload.title.clone();
         card.description = Some(payload.description.clone());
@@ -117,7 +117,7 @@ pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, Cu
         .iter()
         .find(|col| col.title == payload.column_name)
         .and_then(|col| col.cards.iter().find(|c| c.id == Some(card_oid)))
-        .ok_or_else(|| CustomError::CustomError("Updated card not found".to_string()))?;
+        .ok_or_else(|| CustomError::NotFound("Updated card not found".to_string()))?;
 
     Ok(edited_card.clone())
 }
