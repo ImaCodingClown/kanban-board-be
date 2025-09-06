@@ -106,5 +106,4 @@ where
             .map_err(CustomError::MongoError)?;
         Ok(())
     }
-    
 }
