@@ -1,9 +1,9 @@
-use crate::models::{teams::{Team, CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload, TeamRole, TeamWithUsernames, TeamMemberWithUsername, TeamWithUsernamesResponse}, users::User, cards::Board};
+use crate::{models::{cards::Board, teams::{AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, Team, TeamMemberWithUsername, TeamRole, TeamWithUsernames, TeamWithUsernamesResponse, UpdateTeamPayload}, users::User}, utils::errors::CustomError};
 use mongodb::{bson::{doc, oid::ObjectId}, Client};
 use futures::TryStreamExt;
 
 
-pub async fn create_team(db: &Client, email: &str, payload: CreateTeamPayload) -> Result<Team, String> {
+pub async fn create_team(db: &Client, email: &str, payload: CreateTeamPayload) -> Result<Team, CustomError> {
 
     let users = db.database("general").collection::<User>("users");
     let teams = db.database("general").collection::<Team>("teams");
