@@ -1,12 +1,6 @@
 use crate::config::AppState;
-use crate::models::teams::{
-    AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, TeamResponse, TeamsResponse,
-    UpdateTeamPayload,
-};
-use crate::services::teams::{
-    add_member, create_team, delete_team, get_team, get_user_teams, leave_team, remove_member,
-    update_team,
-};
+use crate::models::teams::{CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload, TeamResponse, TeamsResponse, TeamWithUsernamesResponse};
+use crate::services::teams::{create_team, get_team, get_user_teams, update_team, add_member, remove_member, leave_team, delete_team, get_team_with_usernames};
 use crate::utils::jwt::AuthBearer;
 use axum::{
     extract::{Path, State},
@@ -25,6 +19,7 @@ pub fn routes() -> Router<AppState> {
         .route("/{team_name}", delete(handle_delete_team))
         .route("/{team_name}/members", post(handle_add_member))
         .route("/{team_name}/members", delete(handle_remove_member))
+        .route("/{team_name}/with-usernames", get(handle_get_team_with_usernames))
         .route("/{team_name}/leave", post(handle_leave_team))
 }
 
@@ -98,6 +93,7 @@ async fn handle_get_user_teams(
                 teams,
                 message: Some("User teams retrieved successfully".to_string()),
             }),
+        
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -230,6 +226,39 @@ async fn handle_delete_team(
                 "success": false,
                 "message": e.to_string()
             })),
+        ),
+    }
+}
+
+async fn handle_get_team_with_usernames(
+    State(state): State<AppState>,
+    AuthBearer(_user_email): AuthBearer,
+    Path(team_name): Path<String>,
+) -> impl IntoResponse {
+    match get_team_with_usernames(&state.db, &team_name).await {
+        Ok(Some(team)) => (
+            StatusCode::OK,
+            Json(TeamWithUsernamesResponse {
+                success: true,
+                team: Some(team),
+                message: Some("Team retrieved successfully".to_string()),
+            }),
+        ),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(TeamWithUsernamesResponse {
+                success: false,
+                team: None,
+                message: Some("Team not found".to_string()),
+            }),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(TeamWithUsernamesResponse {
+                success: false,
+                team: None,
+                message: Some(e),
+            }),
         ),
     }
 }

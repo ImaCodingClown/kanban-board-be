@@ -1,6 +1,6 @@
 use axum::Router;
 use config::AppState;
-use routes::{auth, board, cards, health, teams};
+use routes::{auth, board, cards, health, teams, users};
 use tower_http::cors::{Any, CorsLayer};
 
 mod config;
@@ -36,6 +36,7 @@ pub fn create_app(state: AppState) -> Router {
         .merge(board::routes())
         .merge(health::routes())
         .merge(cards::routes())
+        .merge(users::routes())
         .nest("/teams", teams::routes())
         .layer(cors)
         .with_state(state)

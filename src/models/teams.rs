@@ -120,7 +120,7 @@ pub struct UpdateTeamPayload {
 
 #[derive(Debug, Deserialize)]
 pub struct AddMemberPayload {
-    pub user_email: String,
+    pub user_id: String,
     pub role: TeamRole,
 }
 
@@ -140,5 +140,34 @@ pub struct TeamResponse {
 pub struct TeamsResponse {
     pub success: bool,
     pub teams: Vec<Team>,
+    pub message: Option<String>,
+}
+
+// explicitly for API calls, not stored in the db
+#[derive(Debug, Serialize)]
+pub struct TeamMemberWithUsername {
+    pub user_id: String,
+    pub username: String,
+    pub role: String,
+    pub joined_at: String,
+    pub permissions: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TeamWithUsernames {
+    pub _id: Option<String>,
+    pub name: String,
+    pub description: Option<String>,
+    pub leader_id: String,
+    pub members: Vec<TeamMemberWithUsername>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub is_active: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TeamWithUsernamesResponse {
+    pub success: bool,
+    pub team: Option<TeamWithUsernames>,
     pub message: Option<String>,
 }

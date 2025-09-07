@@ -1,21 +1,10 @@
-use crate::models::{
-    cards::Board,
-    teams::{
-        AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, Team, TeamRole, UpdateTeamPayload,
-    },
-    users::User,
-};
-use crate::utils::errors::CustomError;
-use mongodb::{
-    bson::{doc, oid::ObjectId},
-    Client,
-};
+use crate::models::{teams::{Team, CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload, TeamRole, TeamWithUsernames, TeamMemberWithUsername, TeamWithUsernamesResponse}, users::User, cards::Board};
+use mongodb::{bson::{doc, oid::ObjectId}, Client};
+use futures::TryStreamExt;
 
-pub async fn create_team(
-    db: &Client,
-    email: &str,
-    payload: CreateTeamPayload,
-) -> Result<Team, CustomError> {
+
+pub async fn create_team(db: &Client, email: &str, payload: CreateTeamPayload) -> Result<Team, String> {
+
     let users = db.database("general").collection::<User>("users");
     let teams = db.database("general").collection::<Team>("teams");
 
@@ -210,13 +199,16 @@ pub async fn add_member(
 
     let leader = leader.ok_or_else(|| CustomError::NotFound("Leader not found".to_string()))?;
 
-    let new_member = users
-        .find_one(doc! { "email": &payload.user_email })
-        .await
-        .map_err(|e| CustomError::Database(format!("Failed to find new member: {}", e)))?;
 
-    let new_member =
-        new_member.ok_or_else(|| CustomError::NotFound("New member not found".to_string()))?;
+    let user_id = ObjectId::parse_str(&payload.user_id)
+        .map_err(|e| format!("Invalid user_id format: {e}"))?;
+
+    let new_member = users
+        .find_one(doc! { "_id": user_id })
+        .await
+        .map_err(|e| format!("Failed to find user: {e}"))?;
+
+    let new_member = new_member.ok_or_else(|| format!("User with id '{}' not found", &payload.user_id))?;
 
     let mut team = teams
         .find_one(doc! { "name": team_name })
@@ -249,7 +241,7 @@ pub async fn add_member(
 
         let _user_update_result = users
             .update_one(
-                doc! { "email": &payload.user_email },
+                doc! { "email": &new_member.email },
                 doc! { "$set": { "teams": &member_teams } },
             )
             .await
@@ -418,4 +410,66 @@ pub async fn delete_team(db: &Client, email: &str, team_name: &str) -> Result<()
         .map_err(|e| CustomError::Database(format!("Failed to remove team from users: {}", e)))?;
 
     Ok(())
+}
+
+pub async fn get_team_with_usernames(db: &Client, team_name: &str) -> Result<Option<TeamWithUsernames>, String> {
+    let users = db.database("general").collection::<User>("users");
+    let teams = db.database("general").collection::<Team>("teams");
+    
+    let team = teams
+        .find_one(doc! { "name": team_name })
+        .await
+        .map_err(|e| format!("Failed to get team: {e}"))?;
+
+    if let Some(team) = team {
+      
+        let user_ids: Vec<ObjectId> = team.members.iter().map(|member| member.user_id).collect();
+
+        let mut members_with_usernames = Vec::new();
+
+        if !user_ids.is_empty() {
+            let users_cursor = users
+                .find(doc! { "_id": { "$in": &user_ids } })
+                .await
+                .map_err(|e| format!("Failed to find users: {e}"))?;
+
+            let users_list: Vec<User> = users_cursor
+                .try_collect()
+                .await
+                .map_err(|e| format!("Failed to collect users: {e}"))?;
+
+            let user_map: std::collections::HashMap<ObjectId, &User> = users_list
+                .iter()
+                .map(|user| (user.id.unwrap(), user))
+                .collect();
+
+            for team_member in &team.members {
+                if let Some(user) = user_map.get(&team_member.user_id) {
+                    let member_with_username = TeamMemberWithUsername {
+                        user_id: team_member.user_id.to_hex(),
+                        username: user.username.clone(),
+                        role: format!("{:?}", team_member.role),
+                        joined_at: team_member.joined_at.to_rfc3339(),
+                        permissions: team_member.permissions.clone(),
+                    };
+                    members_with_usernames.push(member_with_username);
+                }
+            }
+        }
+
+        let team_with_usernames = TeamWithUsernames {
+            _id: team.id.map(|id| id.to_hex()),
+            name: team.name,
+            description: team.description,
+            leader_id: team.leader_id.to_hex(),
+            members: members_with_usernames,
+            created_at: chrono::Utc::now().to_rfc3339(),
+            updated_at: chrono::Utc::now().to_rfc3339(),
+            is_active: true, 
+        };
+
+        Ok(Some(team_with_usernames))
+    } else {
+        Ok(None)
+    }
 }
