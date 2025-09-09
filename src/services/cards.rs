@@ -25,7 +25,7 @@ pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, Cust
         description: payload.description,
         assignee: payload.assignee,
         story_point: payload.story_point,
-        priority: None,
+        priority: payload.priority,
     };
 
     col.cards.push(card.clone());
@@ -107,6 +107,7 @@ pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, Cu
         card.description = Some(payload.description.clone());
         card.assignee = Some(payload.assignee.clone());
         card.story_point = payload.story_point.clone();
+        card.priority = payload.priority.clone();
     }
 
     let board_id = board.id.clone().unwrap();
