@@ -82,6 +82,7 @@ impl Team {
         self.members.iter().any(|member| &member.user_id == user_id)
     }
 
+    #[allow(dead_code)]
     pub fn get_member_role(&self, user_id: &ObjectId) -> Option<TeamRole> {
         self.members
             .iter()
@@ -89,6 +90,7 @@ impl Team {
             .map(|member| member.role)
     }
 
+    #[allow(dead_code)]
     pub fn can_edit(&self, user_id: &ObjectId) -> bool {
         if let Some(member) = self.members.iter().find(|m| &m.user_id == user_id) {
             member.permissions.contains(&"write".to_string())
@@ -97,6 +99,7 @@ impl Team {
         }
     }
 
+    #[allow(dead_code)]
     pub fn can_manage_members(&self, user_id: &ObjectId) -> bool {
         if let Some(member) = self.members.iter().find(|m| &m.user_id == user_id) {
             member.permissions.contains(&"manage_members".to_string())

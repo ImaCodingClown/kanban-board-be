@@ -1,10 +1,25 @@
-use crate::{models::{cards::Board, teams::{AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, Team, TeamMemberWithUsername, TeamRole, TeamWithUsernames, TeamWithUsernamesResponse, UpdateTeamPayload}, users::User}, utils::errors::CustomError};
-use mongodb::{bson::{doc, oid::ObjectId}, Client};
+use crate::{
+    models::{
+        cards::Board,
+        teams::{
+            AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, Team, TeamMemberWithUsername,
+            TeamRole, TeamWithUsernames, UpdateTeamPayload,
+        },
+        users::User,
+    },
+    utils::errors::CustomError,
+};
 use futures::TryStreamExt;
+use mongodb::{
+    bson::{doc, oid::ObjectId},
+    Client,
+};
 
-
-pub async fn create_team(db: &Client, email: &str, payload: CreateTeamPayload) -> Result<Team, CustomError> {
-
+pub async fn create_team(
+    db: &Client,
+    email: &str,
+    payload: CreateTeamPayload,
+) -> Result<Team, CustomError> {
     let users = db.database("general").collection::<User>("users");
     let teams = db.database("general").collection::<Team>("teams");
 
@@ -199,7 +214,6 @@ pub async fn add_member(
 
     let leader = leader.ok_or_else(|| CustomError::NotFound("Leader not found".to_string()))?;
 
-
     let user_id = ObjectId::parse_str(&payload.user_id)
         .map_err(|e| format!("Invalid user_id format: {e}"))?;
 
@@ -208,7 +222,8 @@ pub async fn add_member(
         .await
         .map_err(|e| format!("Failed to find user: {e}"))?;
 
-    let new_member = new_member.ok_or_else(|| format!("User with id '{}' not found", &payload.user_id))?;
+    let new_member =
+        new_member.ok_or_else(|| format!("User with id '{}' not found", &payload.user_id))?;
 
     let mut team = teams
         .find_one(doc! { "name": team_name })
@@ -228,7 +243,7 @@ pub async fn add_member(
         ));
     }
 
-    team.add_member(new_member.id.unwrap(), payload.role.clone());
+    team.add_member(new_member.id.unwrap(), payload.role);
 
     let _update_result = teams
         .replace_one(doc! { "name": team_name }, &team)
@@ -412,17 +427,19 @@ pub async fn delete_team(db: &Client, email: &str, team_name: &str) -> Result<()
     Ok(())
 }
 
-pub async fn get_team_with_usernames(db: &Client, team_name: &str) -> Result<Option<TeamWithUsernames>, String> {
+pub async fn get_team_with_usernames(
+    db: &Client,
+    team_name: &str,
+) -> Result<Option<TeamWithUsernames>, String> {
     let users = db.database("general").collection::<User>("users");
     let teams = db.database("general").collection::<Team>("teams");
-    
+
     let team = teams
         .find_one(doc! { "name": team_name })
         .await
         .map_err(|e| format!("Failed to get team: {e}"))?;
 
     if let Some(team) = team {
-      
         let user_ids: Vec<ObjectId> = team.members.iter().map(|member| member.user_id).collect();
 
         let mut members_with_usernames = Vec::new();
@@ -465,7 +482,7 @@ pub async fn get_team_with_usernames(db: &Client, team_name: &str) -> Result<Opt
             members: members_with_usernames,
             created_at: chrono::Utc::now().to_rfc3339(),
             updated_at: chrono::Utc::now().to_rfc3339(),
-            is_active: true, 
+            is_active: true,
         };
 
         Ok(Some(team_with_usernames))

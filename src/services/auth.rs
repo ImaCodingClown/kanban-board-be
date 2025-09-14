@@ -45,12 +45,12 @@ pub async fn signup(
 
     let _ = get_board_by_team("LJY Members".to_string(), db).await;
 
-    if let Err(_) = add_user_to_ljy_team(db, user_id, &email).await {
+    if add_user_to_ljy_team(db, user_id, &email).await.is_err() {
         // Silently continue if team addition fails
     }
 
     let (access_token, refresh_token) = JWTValidator::create_jwt(&email, secret);
-    let _ = save_refresh_token(&email, &refresh_token, db)
+    save_refresh_token(&email, &refresh_token, db)
         .await
         .map_err(|e| CustomError::Database(format!("Failed to save refresh token: {}", e)))?;
 
@@ -133,7 +133,7 @@ pub async fn refresh_access_token(
 
     Ok(AuthResponse {
         access_token: new_access_token,
-        refresh_token: refresh_token,
+        refresh_token,
         expires_in: 12 * 60 * 60,
     })
 }

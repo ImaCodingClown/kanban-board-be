@@ -15,6 +15,6 @@ macro_rules! create_index {
         $collection
             .create_index(mongodb::IndexModel::builder().keys($keys).build())
             .await
-            .map_err(|e| crate::utils::errors::CustomError::Database(format!($error_msg, e)))?;
+            .map_err(|e| $crate::utils::errors::CustomError::Database(format!($error_msg, e)))?;
     };
 }

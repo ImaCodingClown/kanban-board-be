@@ -71,10 +71,9 @@ pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), 
 
     let board_id = board
         .id
-        .clone()
+        .as_ref()
         .ok_or_else(|| CustomError::NotFound("Missing board ID".to_string()))?;
-
-    board_service.replace_one(board, &board_id).await?;
+    board_service.replace_one(board, board_id).await?;
 
     Ok(())
 }
@@ -106,11 +105,11 @@ pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, Cu
         card.title = payload.title.clone();
         card.description = Some(payload.description.clone());
         card.assignee = Some(payload.assignee.clone());
-        card.story_point = payload.story_point.clone();
+        card.story_point = payload.story_point;
         card.priority = payload.priority.clone();
     }
 
-    let board_id = board.id.clone().unwrap();
+    let board_id = board.id.unwrap();
     board_service.replace_one(board, &board_id).await?;
 
     let edited_card = board
