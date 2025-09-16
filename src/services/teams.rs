@@ -1,4 +1,4 @@
-use crate::{models::{cards::Board, teams::{AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, Team, TeamMemberWithUsername, TeamRole, TeamWithUsernames, TeamWithUsernamesResponse, UpdateTeamPayload}, users::User}, utils::errors::CustomError};
+use crate::{models::{cards::Board, teams::{AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, Team, TeamMemberWithUsername, TeamRole, TeamWithUsernames, UpdateTeamPayload}, users::User}, utils::errors::CustomError};
 use mongodb::{bson::{doc, oid::ObjectId}, Client};
 use futures::TryStreamExt;
 
@@ -82,7 +82,7 @@ pub async fn add_user_to_ljy_team(
     user_id: ObjectId,
     _email: &str,
 ) -> Result<(), CustomError> {
-    add_user_to_team(db, "LJY Members", user_id, TeamRole::Collaborator).await
+    add_user_to_team(db, "LJY Soft", user_id, TeamRole::Collaborator).await
 }
 
 pub async fn get_team(db: &Client, team_name: &str) -> Result<Option<Team>, CustomError> {
