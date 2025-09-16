@@ -17,7 +17,7 @@ use tower::ServiceExt;
 #[tokio::test]
 async fn test_username() {
     dotenv().ok();
-    let mongo_uri = env::var("MONGO_URI").expect("MONGO_URI must be set");
+    let mongo_uri = env::var("TEST_MONGO_URI").unwrap_or("mongodb://localhost:27017".to_string());
 
     let client_options = ClientOptions::parse(&mongo_uri).await.unwrap();
     let client = Client::with_options(client_options).unwrap();
@@ -50,7 +50,7 @@ async fn test_username() {
 async fn test_me_endpoint() {
     dotenv().ok();
 
-    let mongo_uri = env::var("MONGO_URI").expect("MONGO_URI must be set");
+    let mongo_uri = env::var("TEST_MONGO_URI").unwrap_or("mongodb://localhost:27017".to_string());
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
     // Setup Mongo client and clear users
