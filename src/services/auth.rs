@@ -24,7 +24,7 @@ pub async fn signup(
     let user_service = ODM::<User>::build(db).await;
     let hashed = hash(&password, 4)
         .map_err(|e| CustomError::Server(format!("Password hashing failed: {}", e)))?;
-    let teams = vec!["LJY Members".to_string()];
+    let teams = vec!["LJY Soft".to_string()];
     let user = User::create(username.clone(), email.clone(), hashed, teams.clone());
 
     if user_service.fetch_one(&user).await?.is_some() {
@@ -43,7 +43,7 @@ pub async fn signup(
         .as_object_id()
         .ok_or_else(|| CustomError::Server("Failed to get user ID after save".to_string()))?;
 
-    let _ = get_board_by_team("LJY Members".to_string(), db).await;
+    let _ = get_board_by_team("LJY Soft".to_string(), db).await;
 
     if add_user_to_ljy_team(db, user_id, &email).await.is_err() {
         // Silently continue if team addition fails
