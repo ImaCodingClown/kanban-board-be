@@ -1,6 +1,6 @@
 use crate::models::users::User;
-use mongodb::{bson::doc, Database, Client};
 use futures::TryStreamExt;
+use mongodb::{bson::doc, Client, Database};
 
 pub async fn get_user_by_email(db: &Database, email: &str) -> Result<User, String> {
     let users = db.collection::<User>("users");
@@ -13,7 +13,7 @@ pub async fn get_user_by_email(db: &Database, email: &str) -> Result<User, Strin
 
 pub async fn get_all_users(db: &Client) -> Result<Vec<User>, String> {
     let users = db.database("general").collection::<User>("users");
-    
+
     let cursor = users
         .find(doc! {})
         .await

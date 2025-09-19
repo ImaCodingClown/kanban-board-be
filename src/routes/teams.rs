@@ -1,6 +1,12 @@
 use crate::config::AppState;
-use crate::models::teams::{CreateTeamPayload, UpdateTeamPayload, AddMemberPayload, RemoveMemberPayload, TeamResponse, TeamsResponse, TeamWithUsernamesResponse};
-use crate::services::teams::{create_team, get_team, get_user_teams, update_team, add_member, remove_member, leave_team, delete_team, get_team_with_usernames};
+use crate::models::teams::{
+    AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, TeamResponse,
+    TeamWithUsernamesResponse, TeamsResponse, UpdateTeamPayload,
+};
+use crate::services::teams::{
+    add_member, create_team, delete_team, get_team, get_team_with_usernames, get_user_teams,
+    leave_team, remove_member, update_team,
+};
 use crate::utils::jwt::AuthBearer;
 use axum::{
     extract::{Path, State},
@@ -19,7 +25,10 @@ pub fn routes() -> Router<AppState> {
         .route("/{team_name}", delete(handle_delete_team))
         .route("/{team_name}/members", post(handle_add_member))
         .route("/{team_name}/members", delete(handle_remove_member))
-        .route("/{team_name}/with-usernames", get(handle_get_team_with_usernames))
+        .route(
+            "/{team_name}/with-usernames",
+            get(handle_get_team_with_usernames),
+        )
         .route("/{team_name}/leave", post(handle_leave_team))
 }
 
@@ -93,7 +102,6 @@ async fn handle_get_user_teams(
                 teams,
                 message: Some("User teams retrieved successfully".to_string()),
             }),
-        
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,

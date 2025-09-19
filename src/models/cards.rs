@@ -68,6 +68,7 @@ pub struct AddCardPayload {
     pub story_point: Option<u8>,
     pub assignee: Option<String>,
     pub team: String,
+    pub priority: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -86,6 +87,7 @@ pub struct EditCardPayload {
     pub story_point: Option<u8>,
     pub assignee: String,
     pub team: String,
+    pub priority: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
