@@ -24,7 +24,7 @@ pub async fn signup(
     let user_service = ODM::<User>::build(db).await;
     let hashed = hash(&password, 4)
         .map_err(|e| CustomError::Server(format!("Password hashing failed: {}", e)))?;
-    let teams = vec!["LJY Members".to_string()];
+    let teams = vec!["LJY Soft".to_string()];
     let user = User::create(username.clone(), email.clone(), hashed, teams.clone());
 
     if user_service.fetch_one(&user).await?.is_some() {
@@ -43,14 +43,14 @@ pub async fn signup(
         .as_object_id()
         .ok_or_else(|| CustomError::Server("Failed to get user ID after save".to_string()))?;
 
-    let _ = get_board_by_team("LJY Members".to_string(), db).await;
+    let _ = get_board_by_team("LJY Soft".to_string(), db).await;
 
-    if let Err(_) = add_user_to_ljy_team(db, user_id, &email).await {
+    if add_user_to_ljy_team(db, user_id, &email).await.is_err() {
         // Silently continue if team addition fails
     }
 
     let (access_token, refresh_token) = JWTValidator::create_jwt(&email, secret);
-    let _ = save_refresh_token(&email, &refresh_token, db)
+    save_refresh_token(&email, &refresh_token, db)
         .await
         .map_err(|e| CustomError::Database(format!("Failed to save refresh token: {}", e)))?;
 
@@ -133,7 +133,7 @@ pub async fn refresh_access_token(
 
     Ok(AuthResponse {
         access_token: new_access_token,
-        refresh_token: refresh_token,
+        refresh_token,
         expires_in: 12 * 60 * 60,
     })
 }
