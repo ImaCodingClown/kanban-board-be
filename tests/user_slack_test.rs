@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::models::users::{UpdateSlackIdPayload, User};
+    use kanban_backend::models::users::{UpdateSlackIdPayload, User};
 
     #[test]
     fn test_user_create_with_slack_id_field() {

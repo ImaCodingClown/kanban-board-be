@@ -1,13 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
+    use kanban_backend::{
         config::{AppState, Environment},
         models::cards::{Board, Card, Column, EditCardPayload},
-        services::user_info::get_user_by_username,
+        services::{
+            slack::SlackNotification,
+            user_info::get_user_by_username,
+        },
     };
     use mongodb::{bson::oid::ObjectId, Client};
-    use std::sync::Arc;
 
     #[tokio::test]
     async fn test_get_user_by_username() {

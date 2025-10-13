@@ -28,7 +28,7 @@ pub async fn send_assignee_notification(
     Ok(())
 }
 
-fn create_slack_message(notification: SlackNotification) -> HashMap<String, serde_json::Value> {
+pub fn create_slack_message(notification: SlackNotification) -> HashMap<String, serde_json::Value> {
     let mut message = HashMap::new();
 
     message.insert(

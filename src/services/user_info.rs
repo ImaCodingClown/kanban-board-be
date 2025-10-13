@@ -39,7 +39,7 @@ pub async fn update_user_slack_id(
     db: &Client,
 ) -> Result<User, CustomError> {
     let user_oid = ObjectId::parse_str(user_id)
-        .map_err(|_| CustomError::NotFound("Invalid user ID".to_string()))?;
+        .map_err(|_| CustomError::NotFound(format!("Invalid user ID format: '{}'. Expected MongoDB ObjectId format.", user_id)))?;
 
     let users = db.database("general").collection::<User>("users");
 
@@ -51,9 +51,9 @@ pub async fn update_user_slack_id(
     };
 
     let result = users
-        .find_one_and_update(filter, update, None)
+        .find_one_and_update(filter, update)
         .await
-        .map_err(|e| CustomError::InternalServerError(format!("Database error: {}", e)))?;
+        .map_err(|e| CustomError::Server(format!("Database error: {}", e)))?;
 
     result.ok_or_else(|| CustomError::NotFound("User not found".to_string()))
 }
@@ -64,9 +64,9 @@ pub async fn get_user_by_username(username: &str, db: &Client) -> Result<User, C
     let filter = doc! { "username": username };
 
     let user = users
-        .find_one(filter, None)
+        .find_one(filter)
         .await
-        .map_err(|e| CustomError::InternalServerError(format!("Database error: {}", e)))?
+        .map_err(|e| CustomError::Server(format!("Database error: {}", e)))?
         .ok_or_else(|| CustomError::NotFound("User not found".to_string()))?;
 
     Ok(user)
