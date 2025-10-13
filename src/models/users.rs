@@ -16,6 +16,7 @@ pub struct User {
     pub group: Vec<String>,
     pub permissions: Vec<String>,
     pub teams: Vec<String>,
+    pub slack_user_id: Option<String>,
 }
 
 impl User {
@@ -33,6 +34,7 @@ impl User {
             group: Vec::new(),
             permissions: Vec::new(),
             teams,
+            slack_user_id: None,
         }
     }
 }
@@ -52,6 +54,11 @@ pub struct UsersResponse {
     pub success: bool,
     pub users: Vec<UserPublic>,
     pub message: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UpdateSlackIdPayload {
+    pub slack_user_id: String,
 }
 
 impl From<User> for UserPublic {

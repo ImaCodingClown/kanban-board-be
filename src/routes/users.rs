@@ -1,11 +1,24 @@
-use crate::config::AppState;
-use crate::models::users::{UserPublic, UsersResponse};
-use crate::services::user_info::get_all_users;
-use crate::utils::jwt::AuthBearer;
-use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
+use crate::{
+    config::AppState,
+    models::users::{UpdateSlackIdPayload, UserPublic, UsersResponse},
+    services::user_info::{get_all_users, update_user_slack_id},
+    utils::{
+        errors::CustomError,
+        jwt::AuthBearer,
+    },
+};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, patch},
+    Json, Router,
+};
 
 pub fn routes() -> Router<AppState> {
-    Router::new().route("/users", get(handle_get_all_users))
+    Router::new()
+        .route("/users", get(handle_get_all_users))
+        .route("/v1/user/:user_id/slack", patch(handle_update_slack_id))
 }
 
 async fn handle_get_all_users(
@@ -31,6 +44,31 @@ async fn handle_get_all_users(
                 users: vec![],
                 message: Some(e),
             }),
+        ),
+    }
+}
+
+async fn handle_update_slack_id(
+    State(state): State<AppState>,
+    Path(user_id): Path<String>,
+    Json(payload): Json<UpdateSlackIdPayload>,
+    AuthBearer(_user_email): AuthBearer,
+) -> impl IntoResponse {
+    match update_user_slack_id(&user_id, payload, &state.db).await {
+        Ok(user) => {
+            let public_user = UserPublic::from(user);
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "success": true,
+                    "user": public_user,
+                    "message": "Slack ID updated successfully"
+                })),
+            )
+        }
+        Err(e) => (
+            e.to_status_code(),
+            Json(e.to_error_response()),
         ),
     }
 }
