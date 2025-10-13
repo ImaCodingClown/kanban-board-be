@@ -22,6 +22,7 @@ pub struct AppState {
     pub environment: Environment,
     pub db: Arc<Client>,
     pub jwt_secret: String,
+    pub slack_webhook_url: Option<String>,
 }
 
 impl AppState {
@@ -35,6 +36,7 @@ impl AppState {
             _ => env::var("MONGO_URI").expect("MongoURI not set"),
         };
         let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET not set");
+        let slack_webhook_url = env::var("SLACK_WEBHOOK_URL").ok();
 
         let db = db::mongo::db_client(&db_uri).await;
 
@@ -47,6 +49,7 @@ impl AppState {
             environment,
             db,
             jwt_secret,
+            slack_webhook_url,
         }
     }
 }
