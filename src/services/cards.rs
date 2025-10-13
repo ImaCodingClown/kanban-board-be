@@ -1,6 +1,8 @@
 use crate::{
+    config::AppState,
     db::mongo::{MongoService, ODM},
     models::cards::{AddCardPayload, Board, Card, DeleteCardPayload, EditCardPayload},
+    services::{slack::SlackNotification, user_info::get_user_by_username},
     utils::errors::CustomError,
 };
 use mongodb::{bson::oid::ObjectId, Client};
@@ -78,8 +80,11 @@ pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), 
     Ok(())
 }
 
-pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, CustomError> {
-    let board_service = ODM::<Board>::build(db).await;
+pub async fn edit_card(
+    payload: EditCardPayload,
+    app_state: &AppState,
+) -> Result<Card, CustomError> {
+    let board_service = ODM::<Board>::build(&app_state.db).await;
     let mut boards = board_service.fetch_many_by_team(&payload.team).await?;
 
     let board = boards
@@ -88,6 +93,22 @@ pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, Cu
 
     let card_oid = ObjectId::parse_str(&payload.card_id)
         .map_err(|_| CustomError::NotFound("Invalid card ID".to_string()))?;
+
+    let old_assignee = {
+        let column = board
+            .columns
+            .iter()
+            .find(|col| col.title == payload.column_name)
+            .ok_or_else(|| CustomError::NotFound("Column not found".to_string()))?;
+
+        let card = column
+            .cards
+            .iter()
+            .find(|card| card.id == Some(card_oid))
+            .ok_or_else(|| CustomError::NotFound("Card not found".to_string()))?;
+
+        card.assignee.clone()
+    };
 
     {
         let column = board
@@ -118,6 +139,27 @@ pub async fn edit_card(payload: EditCardPayload, db: &Client) -> Result<Card, Cu
         .find(|col| col.title == payload.column_name)
         .and_then(|col| col.cards.iter().find(|c| c.id == Some(card_oid)))
         .ok_or_else(|| CustomError::NotFound("Updated card not found".to_string()))?;
+
+    // Send Slack notification if assignee changed
+    if let Some(webhook_url) = &app_state.slack_webhook_url {
+        if old_assignee != Some(payload.assignee.clone()) {
+            if let Ok(user) = get_user_by_username(&payload.assignee, &app_state.db).await {
+                if let Some(slack_user_id) = user.slack_user_id {
+                    let notification = SlackNotification {
+                        slack_user_id,
+                        card_title: payload.title.clone(),
+                        card_description: Some(payload.description.clone()),
+                        priority: payload.priority.clone(),
+                    };
+
+                    crate::services::slack::send_notification_async(
+                        webhook_url.clone(),
+                        notification,
+                    );
+                }
+            }
+        }
+    }
 
     Ok(edited_card.clone())
 }

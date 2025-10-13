@@ -57,3 +57,17 @@ pub async fn update_user_slack_id(
 
     result.ok_or_else(|| CustomError::NotFound("User not found".to_string()))
 }
+
+pub async fn get_user_by_username(username: &str, db: &Client) -> Result<User, CustomError> {
+    let users = db.database("general").collection::<User>("users");
+
+    let filter = doc! { "username": username };
+
+    let user = users
+        .find_one(filter, None)
+        .await
+        .map_err(|e| CustomError::InternalServerError(format!("Database error: {}", e)))?
+        .ok_or_else(|| CustomError::NotFound("User not found".to_string()))?;
+
+    Ok(user)
+}
