@@ -2,10 +2,7 @@ use crate::{
     config::AppState,
     models::users::{UpdateSlackIdPayload, UserPublic, UsersResponse},
     services::user_info::{get_all_users, update_user_slack_id},
-    utils::{
-        errors::CustomError,
-        jwt::AuthBearer,
-    },
+    utils::{errors::CustomError, jwt::AuthBearer},
 };
 use axum::{
     extract::{Path, State},
@@ -66,9 +63,6 @@ async fn handle_update_slack_id(
                 })),
             )
         }
-        Err(e) => (
-            e.to_status_code(),
-            Json(e.to_error_response()),
-        ),
+        Err(e) => (e.to_status_code(), Json(e.to_error_response())),
     }
 }

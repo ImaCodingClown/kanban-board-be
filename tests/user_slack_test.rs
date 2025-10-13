@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::users::{User, UpdateSlackIdPayload};
+    use crate::models::users::{UpdateSlackIdPayload, User};
 
     #[test]
     fn test_user_create_with_slack_id_field() {
@@ -11,7 +11,7 @@ mod tests {
             "hashed_password".to_string(),
             vec!["team1".to_string()],
         );
-        
+
         assert_eq!(user.username, "testuser");
         assert_eq!(user.email, "test@example.com");
         assert_eq!(user.password_hash, "hashed_password");
@@ -26,7 +26,7 @@ mod tests {
         let payload = UpdateSlackIdPayload {
             slack_user_id: "U01ABC2DEF3".to_string(),
         };
-        
+
         assert_eq!(payload.slack_user_id, "U01ABC2DEF3");
     }
 
@@ -39,7 +39,7 @@ mod tests {
             vec!["team1".to_string()],
         );
         user.slack_user_id = Some("U01ABC2DEF3".to_string());
-        
+
         let json = serde_json::to_string(&user).unwrap();
         assert!(json.contains("U01ABC2DEF3"));
         assert!(json.contains("slack_user_id"));
@@ -56,7 +56,7 @@ mod tests {
             "teams": ["team1"],
             "slack_user_id": "U01ABC2DEF3"
         }"#;
-        
+
         let user: User = serde_json::from_str(json).unwrap();
         assert_eq!(user.username, "testuser");
         assert_eq!(user.email, "test@example.com");
