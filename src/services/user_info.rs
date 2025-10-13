@@ -38,8 +38,12 @@ pub async fn update_user_slack_id(
     payload: UpdateSlackIdPayload,
     db: &Client,
 ) -> Result<User, CustomError> {
-    let user_oid = ObjectId::parse_str(user_id)
-        .map_err(|_| CustomError::NotFound(format!("Invalid user ID format: '{}'. Expected MongoDB ObjectId format.", user_id)))?;
+    let user_oid = ObjectId::parse_str(user_id).map_err(|_| {
+        CustomError::NotFound(format!(
+            "Invalid user ID format: '{}'. Expected MongoDB ObjectId format.",
+            user_id
+        ))
+    })?;
 
     let users = db.database("general").collection::<User>("users");
 
