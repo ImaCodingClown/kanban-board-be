@@ -32,6 +32,7 @@ pub async fn handle_get_me(
             "username": user.username,
             "email": user.email,
             "teams": user.teams,
+            "slack_user_id": user.slack_user_id,
         })),
         Err(_) => Json(serde_json::json!({ "error": "User not found" })),
     }
