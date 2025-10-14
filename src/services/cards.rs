@@ -7,8 +7,8 @@ use crate::{
 };
 use mongodb::{bson::oid::ObjectId, Client};
 
-pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, CustomError> {
-    let board_service = ODM::<Board>::build(db).await;
+pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<Card, CustomError> {
+    let board_service = ODM::<Board>::build(&app_state.db).await;
     let mut boards = board_service.fetch_many_by_team(&payload.team).await?;
 
     let board = boards
@@ -23,11 +23,11 @@ pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, Cust
 
     let card = Card {
         id: Some(ObjectId::new()),
-        title: payload.title,
-        description: payload.description,
-        assignee: payload.assignee,
+        title: payload.title.clone(),
+        description: payload.description.clone(),
+        assignee: payload.assignee.clone(),
         story_point: payload.story_point,
-        priority: payload.priority,
+        priority: payload.priority.clone(),
     };
 
     col.cards.push(card.clone());
@@ -35,6 +35,31 @@ pub async fn add_card(payload: AddCardPayload, db: &Client) -> Result<Card, Cust
     board_service
         .replace_one(board, board.id.as_ref().unwrap())
         .await?;
+
+    // Send Slack notification if assignee is set
+    if let Some(webhook_url) = &app_state.slack_webhook_url {
+        if let Some(assignee) = &payload.assignee {
+            if let Ok(user) = get_user_by_username(assignee, &app_state.db).await {
+                if let Some(slack_user_id) = user.slack_user_id {
+                    let notification = SlackNotification {
+                        slack_user_id,
+                        card_title: payload.title,
+                        card_description: payload.description,
+                        priority: payload.priority,
+                    };
+
+                    if let Err(e) = crate::services::slack::send_assignee_notification(
+                        webhook_url,
+                        notification,
+                    )
+                    .await
+                    {
+                        eprintln!("Failed to send Slack notification: {}", e);
+                    }
+                }
+            }
+        }
+    }
 
     Ok(card)
 }
@@ -152,10 +177,14 @@ pub async fn edit_card(
                         priority: payload.priority.clone(),
                     };
 
-                    crate::services::slack::send_notification_async(
-                        webhook_url.clone(),
+                    if let Err(e) = crate::services::slack::send_assignee_notification(
+                        webhook_url,
                         notification,
-                    );
+                    )
+                    .await
+                    {
+                        eprintln!("Failed to send Slack notification: {}", e);
+                    }
                 }
             }
         }

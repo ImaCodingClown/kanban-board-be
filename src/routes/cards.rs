@@ -24,7 +24,7 @@ pub async fn handle_add_card(
     State(state): State<AppState>,
     Json(payload): Json<AddCardPayload>,
 ) -> impl IntoResponse {
-    match add_card(payload, &state.db).await {
+    match add_card(payload, &state).await {
         Ok(card) => (StatusCode::CREATED, Json(card)).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,

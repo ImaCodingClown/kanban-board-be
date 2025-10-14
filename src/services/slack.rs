@@ -17,11 +17,18 @@ pub async fn send_assignee_notification(
 
     let message = create_slack_message(notification);
 
-    let response = client.post(webhook_url).json(&message).send().await?;
+    let response = match client.post(webhook_url).json(&message).send().await {
+        Ok(res) => res,
+        Err(e) => {
+            eprintln!("Error sending request to Slack: {}", e);
+            return Err(Box::new(e));
+        }
+    };
 
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
+        eprintln!("Slack webhook failed: {} - {}", status, body);
         return Err(format!("Slack webhook failed: {} - {}", status, body).into());
     }
 
@@ -33,46 +40,54 @@ pub fn create_slack_message(notification: SlackNotification) -> HashMap<String, 
 
     message.insert(
         "text".to_string(),
-        json!("You have been assigned to a card"),
+        json!(format!(
+            "Hey <@{}>, you've been assigned to a card!",
+            notification.slack_user_id
+        )),
     );
 
-    let blocks = vec![
+    let mut blocks = vec![
         json!({
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": format!("*Card Assigned*\n<@{}> You have been assigned to: *{}*",
-                    notification.slack_user_id, notification.card_title)
+                "text": format!("*<@{}> has been assigned to a card!*", notification.slack_user_id)
             }
+        }),
+        json!({
+            "type": "divider"
         }),
         json!({
             "type": "section",
             "fields": [
                 {
                     "type": "mrkdwn",
-                    "text": format!("*Description:*\n{}",
-                        notification.card_description.as_deref().unwrap_or("No description"))
+                    "text": format!("*Card:*\n{}", notification.card_title)
                 },
                 {
                     "type": "mrkdwn",
                     "text": format!("*Priority:*\n{}",
-                        notification.priority.as_deref().unwrap_or("Not set"))
+                        notification.priority.as_deref().unwrap_or("N/A"))
                 }
             ]
         }),
     ];
 
+    if let Some(description) = &notification.card_description {
+        blocks.push(json!({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": format!("*Description:*\n{}", description)
+            }
+        }));
+    }
+
     message.insert("blocks".to_string(), json!(blocks));
+    // Remove channel field to send to default webhook channel
+    // message.insert("channel".to_string(), json!(notification.slack_user_id));
 
     message
-}
-
-pub async fn send_notification_async(webhook_url: String, notification: SlackNotification) {
-    tokio::spawn(async move {
-        if let Err(e) = send_assignee_notification(&webhook_url, notification).await {
-            eprintln!("Failed to send Slack notification: {}", e);
-        }
-    });
 }
 
 #[cfg(test)]
