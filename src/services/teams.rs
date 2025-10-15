@@ -191,7 +191,16 @@ pub async fn update_team(
     }
 
     if let Some(webhook) = &payload.slack_webhook_url {
-        team.slack_webhook_url = Some(webhook.clone());
+        let trimmed = webhook.trim();
+        if trimmed.is_empty() {
+            team.slack_webhook_url = None;
+        } else if !trimmed.starts_with("https://hooks.slack.com/services/") {
+            return Err(CustomError::Conflict(
+                "Invalid Slack webhook URL".to_string(),
+            ));
+        } else {
+            team.slack_webhook_url = Some(trimmed.to_string());
+        }
     }
 
     let _update_result = teams

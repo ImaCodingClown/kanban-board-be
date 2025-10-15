@@ -1,4 +1,5 @@
 use crate::config::AppState;
+use crate::models::users::User;
 use crate::models::teams::{
     AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, TeamResponse,
     TeamWithUsernamesResponse, TeamsResponse, UpdateTeamPayload,
@@ -15,6 +16,7 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
+use mongodb::bson::doc;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -59,18 +61,27 @@ async fn handle_create_team(
 
 async fn handle_get_team(
     State(state): State<AppState>,
-    AuthBearer(_user_email): AuthBearer,
+    AuthBearer(user_email): AuthBearer,
     Path(team_name): Path<String>,
 ) -> impl IntoResponse {
     match get_team(&state.db, &team_name).await {
-        Ok(Some(team)) => (
+        Ok(Some(mut team)) => {
+            // Hide webhook for non-leaders
+            let users = state.db.database("general").collection::<User>("users");
+            if let Ok(Some(user)) = users.find_one(doc! {"email": &user_email}).await {
+                if !team.is_leader(&user.id.unwrap()) {
+                    team.slack_webhook_url = None;
+                }
+            }
+            (
             StatusCode::OK,
             Json(TeamResponse {
                 success: true,
                 team: Some(team),
                 message: Some("Team retrieved successfully".to_string()),
             }),
-        ),
+        )
+        }
         Ok(None) => (
             StatusCode::NOT_FOUND,
             Json(TeamResponse {
