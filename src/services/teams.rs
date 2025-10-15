@@ -190,6 +190,10 @@ pub async fn update_team(
         team.description = Some(description.clone());
     }
 
+    if let Some(webhook) = &payload.slack_webhook_url {
+        team.slack_webhook_url = Some(webhook.clone());
+    }
+
     let _update_result = teams
         .replace_one(doc! { "name": team_name }, &team)
         .await

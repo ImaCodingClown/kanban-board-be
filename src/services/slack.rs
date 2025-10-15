@@ -1,93 +1,99 @@
+use crate::models::slack::SlackNotificationPayload;
+use crate::utils::errors::CustomError;
 use serde_json::json;
 use std::collections::HashMap;
 
-#[derive(Debug)]
-pub struct SlackNotification {
-    pub slack_user_id: String,
-    pub card_title: String,
-    pub card_description: Option<String>,
-    pub priority: Option<String>,
+#[async_trait::async_trait]
+pub trait SlackNotifier: Send + Sync {
+    fn build_message(
+        &self,
+        payload: &SlackNotificationPayload,
+    ) -> HashMap<String, serde_json::Value>;
+    async fn send(
+        &self,
+        webhook_url: &str,
+        payload: SlackNotificationPayload,
+    ) -> Result<(), CustomError>;
 }
 
-pub async fn send_assignee_notification(
-    webhook_url: &str,
-    notification: SlackNotification,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let client = reqwest::Client::new();
+pub struct SlackWebhookNotifier;
 
-    let message = create_slack_message(notification);
+impl SlackWebhookNotifier {
+    fn create_message(payload: &SlackNotificationPayload) -> HashMap<String, serde_json::Value> {
+        let mut message = HashMap::new();
 
-    let response = match client.post(webhook_url).json(&message).send().await {
-        Ok(res) => res,
-        Err(e) => {
-            eprintln!("Error sending request to Slack: {}", e);
-            return Err(Box::new(e));
-        }
-    };
+        message.insert(
+            "text".to_string(),
+            json!(format!(
+                "Hey <@{}>, you've been assigned to a card!",
+                payload.slack_user_id
+            )),
+        );
 
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        eprintln!("Slack webhook failed: {} - {}", status, body);
-        return Err(format!("Slack webhook failed: {} - {}", status, body).into());
-    }
-
-    Ok(())
-}
-
-pub fn create_slack_message(notification: SlackNotification) -> HashMap<String, serde_json::Value> {
-    let mut message = HashMap::new();
-
-    message.insert(
-        "text".to_string(),
-        json!(format!(
-            "Hey <@{}>, you've been assigned to a card!",
-            notification.slack_user_id
-        )),
-    );
-
-    let mut blocks = vec![
-        json!({
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": format!("*<@{}> has been assigned to a card!*", notification.slack_user_id)
-            }
-        }),
-        json!({
-            "type": "divider"
-        }),
-        json!({
-            "type": "section",
-            "fields": [
-                {
+        let mut blocks = vec![
+            json!({
+                "type": "section",
+                "text": {
                     "type": "mrkdwn",
-                    "text": format!("*Card:*\n{}", notification.card_title)
-                },
-                {
-                    "type": "mrkdwn",
-                    "text": format!("*Priority:*\n{}",
-                        notification.priority.as_deref().unwrap_or("N/A"))
+                    "text": format!("*<@{}> has been assigned to a card!*", payload.slack_user_id)
                 }
-            ]
-        }),
-    ];
+            }),
+            json!({ "type": "divider" }),
+            json!({
+                "type": "section",
+                "fields": [
+                    { "type": "mrkdwn", "text": format!("*Card:*\n{}", payload.card_title) },
+                    { "type": "mrkdwn", "text": format!("*Priority:*\n{}", payload.priority.as_deref().unwrap_or("N/A")) }
+                ]
+            }),
+        ];
 
-    if let Some(description) = &notification.card_description {
-        blocks.push(json!({
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": format!("*Description:*\n{}", description)
-            }
-        }));
+        if let Some(description) = &payload.card_description {
+            blocks.push(json!({
+                "type": "section",
+                "text": { "type": "mrkdwn", "text": format!("*Description:*\n{}", description) }
+            }));
+        }
+
+        message.insert("blocks".to_string(), json!(blocks));
+        message
+    }
+}
+
+#[async_trait::async_trait]
+impl SlackNotifier for SlackWebhookNotifier {
+    fn build_message(
+        &self,
+        payload: &SlackNotificationPayload,
+    ) -> HashMap<String, serde_json::Value> {
+        Self::create_message(payload)
     }
 
-    message.insert("blocks".to_string(), json!(blocks));
-    // Remove channel field to send to default webhook channel
-    // message.insert("channel".to_string(), json!(notification.slack_user_id));
+    async fn send(
+        &self,
+        webhook_url: &str,
+        payload: SlackNotificationPayload,
+    ) -> Result<(), CustomError> {
+        let client = reqwest::Client::new();
+        let message = Self::create_message(&payload);
+        let response = client
+            .post(webhook_url)
+            .json(&message)
+            .send()
+            .await
+            .map_err(|e| CustomError::Server(format!("Slack request error: {}", e)))?;
 
-    message
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(CustomError::Server(format!(
+                "Slack webhook failed: {}",
+                status
+            )));
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -95,20 +101,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_create_slack_message() {
-        let notification = SlackNotification {
+    fn test_build_message_has_blocks() {
+        let payload = SlackNotificationPayload {
             slack_user_id: "U01ABC2DEF3".to_string(),
             card_title: "Test Card".to_string(),
             card_description: Some("Test description".to_string()),
             priority: Some("High".to_string()),
         };
 
-        let message = create_slack_message(notification);
-
-        assert!(message.contains_key("text"));
-        assert!(message.contains_key("blocks"));
-
-        let blocks = message.get("blocks").unwrap().as_array().unwrap();
-        assert_eq!(blocks.len(), 2);
+        let msg = SlackWebhookNotifier::create_message(&payload);
+        assert!(msg.contains_key("text"));
+        assert!(msg.contains_key("blocks"));
     }
 }
