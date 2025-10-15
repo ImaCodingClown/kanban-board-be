@@ -4,7 +4,10 @@ use crate::{
     models::cards::{AddCardPayload, Board, Card, DeleteCardPayload, EditCardPayload},
     models::slack::SlackNotificationPayload,
     models::teams::Team,
-    services::{slack::{SlackNotifier, SlackWebhookNotifier}, user_info::get_user_by_username},
+    services::{
+        slack::{SlackNotifier, SlackWebhookNotifier},
+        user_info::get_user_by_username,
+    },
     utils::errors::CustomError,
 };
 use mongodb::{bson::oid::ObjectId, Client};
@@ -55,17 +58,9 @@ pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<C
                             priority: payload.priority,
                         };
                         let notifier = SlackWebhookNotifier;
-                        if let Err(e) = notifier.send(&webhook_url, payload).await {
-                            eprintln!("Slack send failed: {}", e);
-                        }
-                    } else {
-                        eprintln!("Slack user id missing");
+                        let _ = notifier.send(&webhook_url, payload).await;
                     }
-                } else {
-                    eprintln!("Assignee not found");
                 }
-            } else {
-                eprintln!("Team webhook missing");
             }
         }
     }
@@ -190,17 +185,9 @@ pub async fn edit_card(
                             priority: payload.priority.clone(),
                         };
                         let notifier = SlackWebhookNotifier;
-                        if let Err(e) = notifier.send(&webhook_url, payload).await {
-                            eprintln!("Slack send failed: {}", e);
-                        }
-                    } else {
-                        eprintln!("Slack user id missing");
+                        let _ = notifier.send(&webhook_url, payload).await;
                     }
-                } else {
-                    eprintln!("Assignee not found");
                 }
-            } else {
-                eprintln!("Team webhook missing");
             }
         }
     }

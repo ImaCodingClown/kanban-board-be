@@ -1,9 +1,9 @@
 use crate::config::AppState;
-use crate::models::users::User;
 use crate::models::teams::{
     AddMemberPayload, CreateTeamPayload, RemoveMemberPayload, TeamResponse,
     TeamWithUsernamesResponse, TeamsResponse, UpdateTeamPayload,
 };
+use crate::models::users::User;
 use crate::services::teams::{
     add_member, create_team, delete_team, get_team, get_team_with_usernames, get_user_teams,
     leave_team, remove_member, update_team,
@@ -74,13 +74,13 @@ async fn handle_get_team(
                 }
             }
             (
-            StatusCode::OK,
-            Json(TeamResponse {
-                success: true,
-                team: Some(team),
-                message: Some("Team retrieved successfully".to_string()),
-            }),
-        )
+                StatusCode::OK,
+                Json(TeamResponse {
+                    success: true,
+                    team: Some(team),
+                    message: Some("Team retrieved successfully".to_string()),
+                }),
+            )
         }
         Ok(None) => (
             StatusCode::NOT_FOUND,
