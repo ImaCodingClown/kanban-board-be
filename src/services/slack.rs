@@ -56,13 +56,6 @@ pub async fn send_notification_with_message(
     Ok(())
 }
 
-pub async fn send_assignee_notification(
-    webhook_url: &str,
-    notification: SlackNotificationPayload,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let message = create_slack_message(notification);
-    send_notification_with_message(webhook_url, message).await
-}
 
 pub fn create_slack_message(
     notification: SlackNotificationPayload,
