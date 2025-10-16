@@ -86,6 +86,7 @@ async fn test_me_endpoint() {
         environment: Environment::Dev,
         db: Arc::new(client),
         jwt_secret,
+        slack_webhook_url: None,
     };
 
     // Merge your auth routes (including GET /me) with that state

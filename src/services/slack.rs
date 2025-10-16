@@ -1,12 +1,19 @@
+use crate::models::slack::SlackNotificationPayload;
+use crate::utils::errors::CustomError;
 use serde_json::json;
 use std::collections::HashMap;
 
-#[derive(Debug)]
-pub struct SlackNotification {
-    pub slack_user_id: String,
-    pub card_title: String,
-    pub card_description: Option<String>,
-    pub priority: Option<String>,
+#[async_trait::async_trait]
+pub trait SlackNotifier: Send + Sync {
+    fn build_message(
+        &self,
+        payload: &SlackNotificationPayload,
+    ) -> HashMap<String, serde_json::Value>;
+    async fn send(
+        &self,
+        webhook_url: &str,
+        payload: SlackNotificationPayload,
+    ) -> Result<(), CustomError>;
 }
 
 pub async fn send_assignee_notification(
@@ -72,7 +79,9 @@ pub async fn send_notification_async(webhook_url: String, notification: SlackNot
         if let Err(e) = send_assignee_notification(&webhook_url, notification).await {
             eprintln!("Failed to send Slack notification: {}", e);
         }
-    });
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -80,8 +89,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_create_slack_message() {
-        let notification = SlackNotification {
+    fn test_build_message_has_blocks() {
+        let payload = SlackNotificationPayload {
             slack_user_id: "U01ABC2DEF3".to_string(),
             card_title: "Test Card".to_string(),
             card_description: Some("Test description".to_string()),
