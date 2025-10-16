@@ -24,6 +24,7 @@ pub struct Team {
     pub description: Option<String>,
     pub leader_id: ObjectId,
     pub members: Vec<TeamMember>,
+    pub slack_webhook_url: Option<String>,
 }
 
 impl Team {
@@ -46,6 +47,7 @@ impl Team {
             description,
             leader_id,
             members: vec![leader_member],
+            slack_webhook_url: None,
         }
     }
 
@@ -119,6 +121,7 @@ pub struct CreateTeamPayload {
 pub struct UpdateTeamPayload {
     pub name: Option<String>,
     pub description: Option<String>,
+    pub slack_webhook_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

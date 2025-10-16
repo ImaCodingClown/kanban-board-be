@@ -2,7 +2,12 @@ use crate::{
     config::AppState,
     db::mongo::{MongoService, ODM},
     models::cards::{AddCardPayload, Board, Card, DeleteCardPayload, EditCardPayload},
-    services::{slack::SlackNotification, user_info::get_user_by_username},
+    models::slack::SlackNotificationPayload,
+    models::teams::Team,
+    services::{
+        slack::{SlackNotifier, SlackWebhookNotifier},
+        user_info::get_user_by_username,
+    },
     utils::errors::CustomError,
 };
 use mongodb::{bson::oid::ObjectId, Client};
@@ -36,25 +41,24 @@ pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<C
         .replace_one(board, board.id.as_ref().unwrap())
         .await?;
 
-    // Send Slack notification if assignee is set
-    if let Some(webhook_url) = &app_state.slack_webhook_url {
-        if let Some(assignee) = &payload.assignee {
-            if let Ok(user) = get_user_by_username(assignee, &app_state.db).await {
-                if let Some(slack_user_id) = user.slack_user_id {
-                    let notification = SlackNotification {
-                        slack_user_id,
-                        card_title: payload.title,
-                        card_description: payload.description,
-                        priority: payload.priority,
-                    };
-
-                    if let Err(e) = crate::services::slack::send_assignee_notification(
-                        webhook_url,
-                        notification,
-                    )
-                    .await
-                    {
-                        eprintln!("Failed to send Slack notification: {}", e);
+    // Send Slack notification if team has webhook and assignee is set
+    if let Some(assignee) = &payload.assignee {
+        let teams = app_state.db.database("general").collection::<Team>("teams");
+        if let Ok(Some(team)) = teams
+            .find_one(mongodb::bson::doc! {"name": &payload.team })
+            .await
+        {
+            if let Some(webhook_url) = team.slack_webhook_url {
+                if let Ok(user) = get_user_by_username(assignee, &app_state.db).await {
+                    if let Some(slack_user_id) = user.slack_user_id {
+                        let payload = SlackNotificationPayload {
+                            slack_user_id,
+                            card_title: payload.title,
+                            card_description: payload.description,
+                            priority: payload.priority,
+                        };
+                        let notifier = SlackWebhookNotifier;
+                        let _ = notifier.send(&webhook_url, payload).await;
                     }
                 }
             }
@@ -165,25 +169,23 @@ pub async fn edit_card(
         .and_then(|col| col.cards.iter().find(|c| c.id == Some(card_oid)))
         .ok_or_else(|| CustomError::NotFound("Updated card not found".to_string()))?;
 
-    // Send Slack notification if assignee changed
-    if let Some(webhook_url) = &app_state.slack_webhook_url {
-        if old_assignee != Some(payload.assignee.clone()) {
-            if let Ok(user) = get_user_by_username(&payload.assignee, &app_state.db).await {
-                if let Some(slack_user_id) = user.slack_user_id {
-                    let notification = SlackNotification {
-                        slack_user_id,
-                        card_title: payload.title.clone(),
-                        card_description: Some(payload.description.clone()),
-                        priority: payload.priority.clone(),
-                    };
-
-                    if let Err(e) = crate::services::slack::send_assignee_notification(
-                        webhook_url,
-                        notification,
-                    )
-                    .await
-                    {
-                        eprintln!("Failed to send Slack notification: {}", e);
+    if old_assignee != Some(payload.assignee.clone()) {
+        let teams = app_state.db.database("general").collection::<Team>("teams");
+        if let Ok(Some(team)) = teams
+            .find_one(mongodb::bson::doc! {"name": &payload.team })
+            .await
+        {
+            if let Some(webhook_url) = team.slack_webhook_url {
+                if let Ok(user) = get_user_by_username(&payload.assignee, &app_state.db).await {
+                    if let Some(slack_user_id) = user.slack_user_id {
+                        let payload = SlackNotificationPayload {
+                            slack_user_id,
+                            card_title: payload.title.clone(),
+                            card_description: Some(payload.description.clone()),
+                            priority: payload.priority.clone(),
+                        };
+                        let notifier = SlackWebhookNotifier;
+                        let _ = notifier.send(&webhook_url, payload).await;
                     }
                 }
             }
