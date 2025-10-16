@@ -1,24 +1,10 @@
 use crate::models::slack::SlackNotificationPayload;
-use crate::utils::errors::CustomError;
 use serde_json::json;
 use std::collections::HashMap;
 
-#[async_trait::async_trait]
-pub trait SlackNotifier: Send + Sync {
-    fn build_message(
-        &self,
-        payload: &SlackNotificationPayload,
-    ) -> HashMap<String, serde_json::Value>;
-    async fn send(
-        &self,
-        webhook_url: &str,
-        payload: SlackNotificationPayload,
-    ) -> Result<(), CustomError>;
-}
-
 pub async fn send_assignee_notification(
     webhook_url: &str,
-    notification: SlackNotification,
+    notification: SlackNotificationPayload,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let client = reqwest::Client::new();
 
@@ -35,7 +21,9 @@ pub async fn send_assignee_notification(
     Ok(())
 }
 
-fn create_slack_message(notification: SlackNotification) -> HashMap<String, serde_json::Value> {
+fn create_slack_message(
+    notification: SlackNotificationPayload,
+) -> HashMap<String, serde_json::Value> {
     let mut message = HashMap::new();
 
     message.insert(
@@ -74,16 +62,6 @@ fn create_slack_message(notification: SlackNotification) -> HashMap<String, serd
     message
 }
 
-pub async fn send_notification_async(webhook_url: String, notification: SlackNotification) {
-    tokio::spawn(async move {
-        if let Err(e) = send_assignee_notification(&webhook_url, notification).await {
-            eprintln!("Failed to send Slack notification: {}", e);
-        }
-
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -97,7 +75,7 @@ mod tests {
             priority: Some("High".to_string()),
         };
 
-        let message = create_slack_message(notification);
+        let message = create_slack_message(payload);
 
         assert!(message.contains_key("text"));
         assert!(message.contains_key("blocks"));
