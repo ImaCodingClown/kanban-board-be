@@ -32,19 +32,18 @@ impl SlackNotifier for SlackWebhookNotifier {
         webhook_url: &str,
         payload: SlackNotificationPayload,
     ) -> Result<(), CustomError> {
-        send_assignee_notification(webhook_url, payload)
+        let message = self.build_message(&payload);
+        send_notification_with_message(webhook_url, message)
             .await
             .map_err(|e| CustomError::Server(e.to_string()))
     }
 }
 
-pub async fn send_assignee_notification(
+pub async fn send_notification_with_message(
     webhook_url: &str,
-    notification: SlackNotificationPayload,
+    message: HashMap<String, serde_json::Value>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let client = reqwest::Client::new();
-
-    let message = create_slack_message(notification);
 
     let response = client.post(webhook_url).json(&message).send().await?;
 
@@ -55,6 +54,14 @@ pub async fn send_assignee_notification(
     }
 
     Ok(())
+}
+
+pub async fn send_assignee_notification(
+    webhook_url: &str,
+    notification: SlackNotificationPayload,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let message = create_slack_message(notification);
+    send_notification_with_message(webhook_url, message).await
 }
 
 pub fn create_slack_message(
