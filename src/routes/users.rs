@@ -2,7 +2,7 @@ use crate::{
     config::AppState,
     models::users::{UpdateSlackIdPayload, UserPublic, UsersResponse},
     services::user_info::{get_all_users, update_user_slack_id},
-    utils::{errors::CustomError, jwt::AuthBearer},
+    utils::jwt::AuthBearer,
 };
 use axum::{
     extract::{Path, State},
@@ -15,7 +15,7 @@ use axum::{
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/users", get(handle_get_all_users))
-        .route("/v1/user/:user_id/slack", patch(handle_update_slack_id))
+        .route("/v1/user/{user_id}/slack", patch(handle_update_slack_id))
 }
 
 async fn handle_get_all_users(
@@ -47,9 +47,9 @@ async fn handle_get_all_users(
 
 async fn handle_update_slack_id(
     State(state): State<AppState>,
+    AuthBearer(_user_email): AuthBearer,
     Path(user_id): Path<String>,
     Json(payload): Json<UpdateSlackIdPayload>,
-    AuthBearer(_user_email): AuthBearer,
 ) -> impl IntoResponse {
     match update_user_slack_id(&user_id, payload, &state.db).await {
         Ok(user) => {
@@ -62,7 +62,15 @@ async fn handle_update_slack_id(
                     "message": "Slack ID updated successfully"
                 })),
             )
+                .into_response()
         }
-        Err(e) => (e.to_status_code(), Json(e.to_error_response())),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "success": false,
+                "error": e.to_string()
+            })),
+        )
+            .into_response(),
     }
 }
