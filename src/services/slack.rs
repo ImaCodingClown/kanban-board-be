@@ -56,7 +56,6 @@ pub async fn send_notification_with_message(
     Ok(())
 }
 
-
 pub fn create_slack_message(
     notification: SlackNotificationPayload,
 ) -> HashMap<String, serde_json::Value> {
