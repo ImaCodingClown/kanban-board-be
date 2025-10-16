@@ -21,7 +21,7 @@ pub async fn send_assignee_notification(
     Ok(())
 }
 
-fn create_slack_message(
+pub fn create_slack_message(
     notification: SlackNotificationPayload,
 ) -> HashMap<String, serde_json::Value> {
     let mut message = HashMap::new();
@@ -36,8 +36,17 @@ fn create_slack_message(
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": format!("*Card Assigned*\n<@{}> You have been assigned to: *{}*",
-                    notification.slack_user_id, notification.card_title)
+                "text": format!("<@{}> has been assigned to a card!", notification.slack_user_id)
+            }
+        }),
+        json!({
+            "type": "divider"
+        }),
+        json!({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": format!("*{}*", notification.card_title)
             }
         }),
         json!({
@@ -81,6 +90,6 @@ mod tests {
         assert!(message.contains_key("blocks"));
 
         let blocks = message.get("blocks").unwrap().as_array().unwrap();
-        assert_eq!(blocks.len(), 2);
+        assert_eq!(blocks.len(), 4);
     }
 }

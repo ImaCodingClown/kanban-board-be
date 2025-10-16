@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
     use kanban_backend::{
-        config::{AppState, Environment},
         models::cards::{Board, Card, Column, EditCardPayload},
-        services::{slack::SlackNotification, user_info::get_user_by_username},
+        models::slack::SlackNotificationPayload,
+        services::user_info::get_user_by_username,
     };
     use mongodb::{bson::oid::ObjectId, Client};
 
@@ -41,7 +41,7 @@ mod tests {
 
     #[test]
     fn test_slack_notification_creation() {
-        let notification = SlackNotification {
+        let notification = SlackNotificationPayload {
             slack_user_id: "U01ABC2DEF3".to_string(),
             card_title: "Test Card".to_string(),
             card_description: Some("Test description".to_string()),
