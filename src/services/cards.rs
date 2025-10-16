@@ -4,7 +4,10 @@ use crate::{
     models::cards::{AddCardPayload, Board, Card, DeleteCardPayload, EditCardPayload},
     models::slack::SlackNotificationPayload,
     models::teams::Team,
-    services::{slack::send_assignee_notification, user_info::get_user_by_username},
+    services::{
+        slack::{SlackNotifier, SlackWebhookNotifier},
+        user_info::get_user_by_username,
+    },
     utils::errors::CustomError,
 };
 use mongodb::{bson::oid::ObjectId, Client};
@@ -54,7 +57,8 @@ pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<C
                             card_description: payload.description,
                             priority: payload.priority,
                         };
-                        let _ = send_assignee_notification(&webhook_url, payload).await;
+                        let notifier = SlackWebhookNotifier;
+                        let _ = notifier.send(&webhook_url, payload).await;
                     }
                 }
             }
@@ -180,7 +184,8 @@ pub async fn edit_card(
                             card_description: Some(payload.description.clone()),
                             priority: payload.priority.clone(),
                         };
-                        let _ = send_assignee_notification(&webhook_url, payload).await;
+                        let notifier = SlackWebhookNotifier;
+                        let _ = notifier.send(&webhook_url, payload).await;
                     }
                 }
             }

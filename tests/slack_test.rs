@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use kanban_backend::services::slack::create_slack_message;
     use kanban_backend::models::slack::SlackNotificationPayload;
+    use kanban_backend::services::slack::create_slack_message;
 
     #[test]
     fn test_create_slack_message_with_all_fields() {

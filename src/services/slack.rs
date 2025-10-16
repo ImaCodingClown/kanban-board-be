@@ -1,6 +1,42 @@
 use crate::models::slack::SlackNotificationPayload;
+use crate::utils::errors::CustomError;
 use serde_json::json;
 use std::collections::HashMap;
+
+#[async_trait::async_trait]
+pub trait SlackNotifier: Send + Sync {
+    fn build_message(
+        &self,
+        payload: &SlackNotificationPayload,
+    ) -> HashMap<String, serde_json::Value>;
+    async fn send(
+        &self,
+        webhook_url: &str,
+        payload: SlackNotificationPayload,
+    ) -> Result<(), CustomError>;
+}
+
+pub struct SlackWebhookNotifier;
+
+#[async_trait::async_trait]
+impl SlackNotifier for SlackWebhookNotifier {
+    fn build_message(
+        &self,
+        payload: &SlackNotificationPayload,
+    ) -> HashMap<String, serde_json::Value> {
+        create_slack_message(payload.clone())
+    }
+
+    async fn send(
+        &self,
+        webhook_url: &str,
+        payload: SlackNotificationPayload,
+    ) -> Result<(), CustomError> {
+        send_assignee_notification(webhook_url, payload)
+            .await
+            .map_err(|e| CustomError::Server(e.to_string()))
+    }
+}
 
 pub async fn send_assignee_notification(
     webhook_url: &str,
