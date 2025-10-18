@@ -8,7 +8,7 @@ use axum::{
 
 use crate::{
     config::AppState,
-    models::cards::{AddCardPayload, DeleteCardPayload, EditCardPayload, TeamQuery},
+    models::cards::{AddCardPayload, BoardIdQuery, DeleteCardPayload, EditCardPayload},
     services::cards::{add_card, delete_card, edit_card, get_columns},
 };
 
@@ -27,24 +27,22 @@ pub async fn handle_add_card(
     match add_card(payload, &state).await {
         Ok(card) => (StatusCode::CREATED, Json(card)).into_response(),
         Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
+            e.to_status_code(),
+            Json(e.to_error_response()),
+        ).into_response(),
     }
 }
 
 pub async fn handle_get_columns(
     State(state): State<AppState>,
-    Query(query): Query<TeamQuery>,
+    Query(query): Query<BoardIdQuery>,
 ) -> impl IntoResponse {
-    match get_columns(&query.team, &state.db).await {
+    match get_columns(&query.board_id, &state.db).await {
         Ok(columns) => (StatusCode::OK, Json(columns)).into_response(),
         Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        )
-            .into_response(),
+            e.to_status_code(),
+            Json(e.to_error_response()),
+        ).into_response(),
     }
 }
 
@@ -55,10 +53,9 @@ pub async fn handle_delete_card(
     match delete_card(payload, &state.db).await {
         Ok(_) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        )
-            .into_response(),
+            e.to_status_code(),
+            Json(e.to_error_response()),
+        ).into_response(),
     }
 }
 
@@ -69,9 +66,8 @@ pub async fn handle_edit_card(
     match edit_card(payload, &state).await {
         Ok(card) => (StatusCode::OK, Json(card)).into_response(),
         Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        )
-            .into_response(),
+            e.to_status_code(),
+            Json(e.to_error_response()),
+        ).into_response(),
     }
 }

@@ -7,7 +7,7 @@ use crate::{
 };
 
 #[serde_with::skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Board {
     #[serde(rename = "_id")]
     pub id: Option<ObjectId>,
@@ -50,6 +50,7 @@ pub struct Card {
         serialize_with = "crate::utils::mongo_serializers::opt_oid_to_str"
     )]
     pub id: Option<ObjectId>,
+    pub board_id: String,
     pub title: String,
     pub description: Option<String>,
     pub assignee: Option<String>,
@@ -64,7 +65,7 @@ pub struct AddCardPayload {
     pub column_name: String,
     pub story_point: Option<u8>,
     pub assignee: Option<String>,
-    pub team: String,
+    pub board_id: String,
     pub priority: Option<String>,
 }
 
@@ -72,7 +73,7 @@ pub struct AddCardPayload {
 pub struct DeleteCardPayload {
     pub card_id: String,
     pub column_name: String,
-    pub team: String,
+    pub board_id: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -83,11 +84,11 @@ pub struct EditCardPayload {
     pub column_name: String,
     pub story_point: Option<u8>,
     pub assignee: String,
-    pub team: String,
+    pub board_id: String,
     pub priority: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Column {
     pub title: String,
     pub cards: Vec<Card>,
@@ -98,10 +99,20 @@ pub struct TeamQuery {
     pub team: String,
 }
 
+#[derive(Deserialize)]
+pub struct BoardQuery {
+    pub board_id: String,
+}
+
+#[derive(Deserialize)]
+pub struct BoardIdQuery {
+    pub board_id: String,
+}
+
 impl_mongo!(Board, "boards", "general");
 
 impl MongoModel for Board {
     fn unique_query(&self) -> Document {
-        doc! { "id": &self.id }
+        doc! { "_id": &self.id }
     }
 }

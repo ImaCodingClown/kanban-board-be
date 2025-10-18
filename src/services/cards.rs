@@ -5,6 +5,7 @@ use crate::{
     models::slack::SlackNotificationPayload,
     models::teams::Team,
     services::{
+        board::get_board_by_id,
         slack::{SlackNotifier, SlackWebhookNotifier},
         user_info::get_user_by_username,
     },
@@ -13,13 +14,8 @@ use crate::{
 use mongodb::{bson::oid::ObjectId, Client};
 
 pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<Card, CustomError> {
-    let board_service = ODM::<Board>::build(&app_state.db).await;
-    let mut boards = board_service.fetch_many_by_team(&payload.team).await?;
-
-    let board = boards
-        .get_mut(0)
-        .ok_or_else(|| CustomError::NotFound("Board not found".to_string()))?;
-
+    let mut board = get_board_by_id(payload.board_id.clone(), &app_state.db).await?;
+    
     let col = board
         .columns
         .iter_mut()
@@ -28,6 +24,7 @@ pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<C
 
     let card = Card {
         id: Some(ObjectId::new()),
+        board_id: payload.board_id.clone(),
         title: payload.title.clone(),
         description: payload.description.clone(),
         assignee: payload.assignee.clone(),
@@ -37,15 +34,16 @@ pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<C
 
     col.cards.push(card.clone());
 
-    board_service
-        .replace_one(board, board.id.as_ref().unwrap())
-        .await?;
+    let board_service = ODM::<Board>::build(&app_state.db).await;
+    let board_id = board.id.as_ref()
+        .ok_or_else(|| CustomError::NotFound("Missing board ID".to_string()))?;
+    board_service.replace_one(&board, board_id).await?;
 
     // Send Slack notification if team has webhook and assignee is set
     if let Some(assignee) = &payload.assignee {
         let teams = app_state.db.database("general").collection::<Team>("teams");
         if let Ok(Some(team)) = teams
-            .find_one(mongodb::bson::doc! {"name": &payload.team })
+            .find_one(mongodb::bson::doc! {"name": &board.team })
             .await
         {
             if let Some(webhook_url) = team.slack_webhook_url {
@@ -68,26 +66,14 @@ pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<C
     Ok(card)
 }
 
-pub async fn get_columns(team: &str, db: &Client) -> Result<Vec<String>, CustomError> {
-    let board_service = ODM::<Board>::build(db).await;
-    let boards = board_service.fetch_many_by_team(team).await?;
-
-    let board = boards
-        .first()
-        .ok_or_else(|| CustomError::NotFound("Board not found".to_string()))?;
-
+pub async fn get_columns(board_id: &str, db: &Client) -> Result<Vec<String>, CustomError> {
+    let board = get_board_by_id(board_id.to_string(), db).await?;
     let column_titles = board.columns.iter().map(|c| c.title.clone()).collect();
-
     Ok(column_titles)
 }
 
 pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), CustomError> {
-    let board_service = ODM::<Board>::build(db).await;
-    let mut boards = board_service.fetch_many_by_team(&payload.team).await?;
-
-    let board = boards
-        .get_mut(0)
-        .ok_or_else(|| CustomError::NotFound("Board not found".to_string()))?;
+    let mut board = get_board_by_id(payload.board_id.clone(), db).await?;
 
     let card_oid = ObjectId::parse_str(&payload.card_id)
         .map_err(|_| CustomError::NotFound("Invalid card ID".to_string()))?;
@@ -100,11 +86,10 @@ pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), 
 
     col.cards.retain(|card| card.id != Some(card_oid));
 
-    let board_id = board
-        .id
-        .as_ref()
+    let board_service = ODM::<Board>::build(db).await;
+    let board_id = board.id.as_ref()
         .ok_or_else(|| CustomError::NotFound("Missing board ID".to_string()))?;
-    board_service.replace_one(board, board_id).await?;
+    board_service.replace_one(&board, board_id).await?;
 
     Ok(())
 }
@@ -113,12 +98,7 @@ pub async fn edit_card(
     payload: EditCardPayload,
     app_state: &AppState,
 ) -> Result<Card, CustomError> {
-    let board_service = ODM::<Board>::build(&app_state.db).await;
-    let mut boards = board_service.fetch_many_by_team(&payload.team).await?;
-
-    let board = boards
-        .get_mut(0)
-        .ok_or_else(|| CustomError::NotFound("Board not found".to_string()))?;
+    let mut board = get_board_by_id(payload.board_id.clone(), &app_state.db).await?;
 
     let card_oid = ObjectId::parse_str(&payload.card_id)
         .map_err(|_| CustomError::NotFound("Invalid card ID".to_string()))?;
@@ -159,8 +139,10 @@ pub async fn edit_card(
         card.priority = payload.priority.clone();
     }
 
-    let board_id = board.id.unwrap();
-    board_service.replace_one(board, &board_id).await?;
+    let board_service = ODM::<Board>::build(&app_state.db).await;
+    let board_id = board.id.as_ref()
+        .ok_or_else(|| CustomError::NotFound("Missing board ID".to_string()))?;
+    board_service.replace_one(&board, board_id).await?;
 
     let edited_card = board
         .columns
@@ -172,7 +154,7 @@ pub async fn edit_card(
     if old_assignee != Some(payload.assignee.clone()) {
         let teams = app_state.db.database("general").collection::<Team>("teams");
         if let Ok(Some(team)) = teams
-            .find_one(mongodb::bson::doc! {"name": &payload.team })
+            .find_one(mongodb::bson::doc! {"name": &board.team })
             .await
         {
             if let Some(webhook_url) = team.slack_webhook_url {
