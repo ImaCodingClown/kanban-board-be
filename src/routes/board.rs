@@ -1,7 +1,9 @@
 use crate::{
     config::AppState,
     models::cards::{Board, BoardIdQuery, TeamQuery},
-    services::board::{create_board, delete_board, get_board_by_id, get_boards_by_team, update_board},
+    services::board::{
+        create_board, delete_board, get_board_by_id, get_boards_by_team, update_board,
+    },
 };
 use axum::{
     extract::{Query, State},
@@ -37,10 +39,7 @@ async fn handle_get_board(
 ) -> impl IntoResponse {
     match get_board_by_id(payload.board_id, &state.db).await {
         Ok(board) => (StatusCode::OK, Json(board)).into_response(),
-        Err(e) => (
-            e.to_status_code(),
-            Json(e.to_error_response()),
-        ).into_response(),
+        Err(e) => (e.to_status_code(), Json(e.to_error_response())).into_response(),
     }
 }
 
@@ -50,10 +49,7 @@ async fn handle_get_boards(
 ) -> impl IntoResponse {
     match get_boards_by_team(payload.team, &state.db).await {
         Ok(boards) => (StatusCode::OK, Json(boards)).into_response(),
-        Err(e) => (
-            e.to_status_code(),
-            Json(e.to_error_response()),
-        ).into_response(),
+        Err(e) => (e.to_status_code(), Json(e.to_error_response())).into_response(),
     }
 }
 
@@ -63,10 +59,7 @@ async fn handle_create_board(
 ) -> impl IntoResponse {
     match create_board(payload.team, payload.board_name, &state.db).await {
         Ok(board) => (StatusCode::CREATED, Json(board)).into_response(),
-        Err(e) => (
-            e.to_status_code(),
-            Json(e.to_error_response()),
-        ).into_response(),
+        Err(e) => (e.to_status_code(), Json(e.to_error_response())).into_response(),
     }
 }
 
@@ -76,10 +69,7 @@ async fn handle_update_board(
 ) -> impl IntoResponse {
     match update_board(payload.board, &state.db).await {
         Ok(board) => (StatusCode::OK, Json(board)).into_response(),
-        Err(e) => (
-            e.to_status_code(),
-            Json(e.to_error_response()),
-        ).into_response(),
+        Err(e) => (e.to_status_code(), Json(e.to_error_response())).into_response(),
     }
 }
 
@@ -89,9 +79,6 @@ async fn handle_delete_board(
 ) -> impl IntoResponse {
     match delete_board(payload.board_id, &state.db).await {
         Ok(_) => StatusCode::NO_CONTENT.into_response(),
-        Err(e) => (
-            e.to_status_code(),
-            Json(e.to_error_response()),
-        ).into_response(),
+        Err(e) => (e.to_status_code(), Json(e.to_error_response())).into_response(),
     }
 }

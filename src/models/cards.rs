@@ -100,11 +100,6 @@ pub struct TeamQuery {
 }
 
 #[derive(Deserialize)]
-pub struct BoardQuery {
-    pub board_id: String,
-}
-
-#[derive(Deserialize)]
 pub struct BoardIdQuery {
     pub board_id: String,
 }

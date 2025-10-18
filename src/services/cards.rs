@@ -15,7 +15,7 @@ use mongodb::{bson::oid::ObjectId, Client};
 
 pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<Card, CustomError> {
     let mut board = get_board_by_id(payload.board_id.clone(), &app_state.db).await?;
-    
+
     let col = board
         .columns
         .iter_mut()
@@ -35,7 +35,9 @@ pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<C
     col.cards.push(card.clone());
 
     let board_service = ODM::<Board>::build(&app_state.db).await;
-    let board_id = board.id.as_ref()
+    let board_id = board
+        .id
+        .as_ref()
         .ok_or_else(|| CustomError::NotFound("Missing board ID".to_string()))?;
     board_service.replace_one(&board, board_id).await?;
 
@@ -87,7 +89,9 @@ pub async fn delete_card(payload: DeleteCardPayload, db: &Client) -> Result<(), 
     col.cards.retain(|card| card.id != Some(card_oid));
 
     let board_service = ODM::<Board>::build(db).await;
-    let board_id = board.id.as_ref()
+    let board_id = board
+        .id
+        .as_ref()
         .ok_or_else(|| CustomError::NotFound("Missing board ID".to_string()))?;
     board_service.replace_one(&board, board_id).await?;
 
@@ -140,7 +144,9 @@ pub async fn edit_card(
     }
 
     let board_service = ODM::<Board>::build(&app_state.db).await;
-    let board_id = board.id.as_ref()
+    let board_id = board
+        .id
+        .as_ref()
         .ok_or_else(|| CustomError::NotFound("Missing board ID".to_string()))?;
     board_service.replace_one(&board, board_id).await?;
 

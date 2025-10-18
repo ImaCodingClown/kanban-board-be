@@ -26,10 +26,7 @@ pub async fn handle_add_card(
 ) -> impl IntoResponse {
     match add_card(payload, &state).await {
         Ok(card) => (StatusCode::CREATED, Json(card)).into_response(),
-        Err(e) => (
-            e.to_status_code(),
-            Json(e.to_error_response()),
-        ).into_response(),
+        Err(e) => (e.to_status_code(), Json(e.to_error_response())).into_response(),
     }
 }
 
@@ -39,10 +36,7 @@ pub async fn handle_get_columns(
 ) -> impl IntoResponse {
     match get_columns(&query.board_id, &state.db).await {
         Ok(columns) => (StatusCode::OK, Json(columns)).into_response(),
-        Err(e) => (
-            e.to_status_code(),
-            Json(e.to_error_response()),
-        ).into_response(),
+        Err(e) => (e.to_status_code(), Json(e.to_error_response())).into_response(),
     }
 }
 
@@ -52,10 +46,7 @@ pub async fn handle_delete_card(
 ) -> impl IntoResponse {
     match delete_card(payload, &state.db).await {
         Ok(_) => StatusCode::NO_CONTENT.into_response(),
-        Err(e) => (
-            e.to_status_code(),
-            Json(e.to_error_response()),
-        ).into_response(),
+        Err(e) => (e.to_status_code(), Json(e.to_error_response())).into_response(),
     }
 }
 
@@ -65,9 +56,6 @@ pub async fn handle_edit_card(
 ) -> impl IntoResponse {
     match edit_card(payload, &state).await {
         Ok(card) => (StatusCode::OK, Json(card)).into_response(),
-        Err(e) => (
-            e.to_status_code(),
-            Json(e.to_error_response()),
-        ).into_response(),
+        Err(e) => (e.to_status_code(), Json(e.to_error_response())).into_response(),
     }
 }

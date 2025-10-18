@@ -66,7 +66,7 @@ mod tests {
             column_name: "In Progress".to_string(),
             story_point: Some(5),
             assignee: "newuser".to_string(),
-            team: "testteam".to_string(),
+            board_id: "507f1f77bcf86cd799439012".to_string(),
             priority: Some("Medium".to_string()),
         };
 
@@ -74,13 +74,14 @@ mod tests {
         assert_eq!(payload.title, "Updated Card");
         assert_eq!(payload.description, "Updated description");
         assert_eq!(payload.assignee, "newuser");
-        assert_eq!(payload.team, "testteam");
+        assert_eq!(payload.board_id, "507f1f77bcf86cd799439012");
     }
 
     #[test]
     fn test_board_card_structure() {
         let card = Card {
             id: Some(ObjectId::new()),
+            board_id: "507f1f77bcf86cd799439012".to_string(),
             title: "Test Card".to_string(),
             description: Some("Test description".to_string()),
             assignee: Some("testuser".to_string()),
@@ -96,11 +97,13 @@ mod tests {
         let board = Board {
             id: Some(ObjectId::new()),
             team: "testteam".to_string(),
+            board_name: "Test Board".to_string(),
             iteration: None,
             columns: vec![column],
         };
 
         assert_eq!(board.team, "testteam");
+        assert_eq!(board.board_name, "Test Board");
         assert_eq!(board.columns.len(), 1);
         assert_eq!(board.columns[0].cards.len(), 1);
         assert_eq!(
