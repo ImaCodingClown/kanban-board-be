@@ -42,11 +42,6 @@ impl Board {
     }
 }
 
-#[derive(Deserialize)]
-pub struct GetTeamPayload {
-    pub team: String,
-}
-
 #[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Card {
