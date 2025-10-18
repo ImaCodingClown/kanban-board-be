@@ -12,16 +12,18 @@ pub struct Board {
     #[serde(rename = "_id")]
     pub id: Option<ObjectId>,
     pub team: String,
+    pub board_name: String,
     pub iteration: Option<String>,
     pub columns: Vec<Column>,
 }
 
 impl Board {
-    pub fn create_default(team: String) -> Self {
+    pub fn create_default(team: String, board_name: String) -> Self {
         Self {
             id: None,
             team,
-            iteration: None,
+            board_name,
+            iteration: Some(board_name.clone()),
             columns: vec![
                 Column {
                     title: "To Do".to_string(),

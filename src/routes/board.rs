@@ -17,6 +17,12 @@ pub struct BoardQuery {
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct CreateBoardPayload {
+    pub team: String,
+    pub board_name: String,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct UpdateBoardQuery {
     pub board: Board,
 }
@@ -44,9 +50,9 @@ async fn handle_get_board(
 
 async fn handle_create_board(
     State(state): State<AppState>,
-    Json(payload): Json<GetTeamPayload>,
+    Json(payload): Json<CreateBoardPayload>,
 ) -> impl IntoResponse {
-    match create_board(payload.team, &state.db).await {
+    match create_board(payload.team, payload.board_name, &state.db).await {
         Ok(board) => (StatusCode::CREATED, Json(board)).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
