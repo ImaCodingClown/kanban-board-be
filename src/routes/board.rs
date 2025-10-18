@@ -1,6 +1,6 @@
 use crate::{
     config::AppState,
-    models::cards::{Board, GetTeamPayload},
+    models::cards::Board,
     services::board::{create_board, get_board_by_team, update_board},
 };
 use axum::{

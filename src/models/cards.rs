@@ -22,8 +22,8 @@ impl Board {
         Self {
             id: None,
             team,
-            board_name,
-            iteration: Some(board_name.clone()),
+            board_name: board_name.clone(),
+            iteration: Some(board_name),
             columns: vec![
                 Column {
                     title: "To Do".to_string(),

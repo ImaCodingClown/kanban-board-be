@@ -15,7 +15,7 @@ pub async fn get_board_by_team(team_name: String, db: &Client) -> Result<Board, 
         // Create a default board if none exists
         let new_board = Board::create_default(
             team_name.clone(),
-            team_name.clone() + "'s Board".to_string(),
+            team_name.clone() + "'s Board",
         );
         board_service.save_one(&new_board).await?;
         Ok(new_board)
