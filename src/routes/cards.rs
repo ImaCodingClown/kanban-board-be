@@ -14,10 +14,10 @@ use crate::{
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/v1/card", post(handle_add_card))
-        .route("/v1/columns", get(handle_get_columns))
-        .route("/v1/card/delete", post(handle_delete_card))
-        .route("/v1/card/edit", post(handle_edit_card))
+        .route("/card", post(handle_add_card))
+        .route("/columns", get(handle_get_columns))
+        .route("/card/delete", post(handle_delete_card))
+        .route("/card/edit", post(handle_edit_card))
 }
 
 pub async fn handle_add_card(
