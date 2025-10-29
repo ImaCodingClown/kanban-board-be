@@ -7,6 +7,7 @@ use crate::{
         },
         users::User,
     },
+    services::board::create_board,
     utils::errors::CustomError,
 };
 use futures::TryStreamExt;
@@ -53,7 +54,7 @@ pub async fn create_team(
     created_team.id = Some(result.inserted_id.as_object_id().unwrap());
 
     let mut user_teams = user.teams;
-    user_teams.push(team_name);
+    user_teams.push(team_name.clone());
 
     let _update_result = users
         .update_one(
@@ -62,6 +63,13 @@ pub async fn create_team(
         )
         .await
         .map_err(|e| CustomError::Database(format!("Failed to update user teams: {}", e)))?;
+
+    // Create default board for the new team
+    let _default_board = create_board(
+        team_name.clone(),
+        format!("{}'s Board", team_name),
+        db,
+    ).await?;
 
     Ok(created_team)
 }

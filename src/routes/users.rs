@@ -15,7 +15,7 @@ use axum::{
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/users", get(handle_get_all_users))
-        .route("/v1/user/{user_id}/slack", patch(handle_update_slack_id))
+        .route("/user/{user_id}/slack", patch(handle_update_slack_id))
 }
 
 async fn handle_get_all_users(

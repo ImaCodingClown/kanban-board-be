@@ -33,10 +33,10 @@ pub fn create_app(state: AppState) -> Router {
 
     Router::new()
         .merge(auth::routes())
-        .merge(board::routes())
+        .nest("/v1", board::routes())
+        .nest("/v1", cards::routes())
+        .nest("/v1", users::routes())
         .merge(health::routes())
-        .merge(cards::routes())
-        .merge(users::routes())
         .nest("/teams", teams::routes())
         .layer(cors)
         .with_state(state)
