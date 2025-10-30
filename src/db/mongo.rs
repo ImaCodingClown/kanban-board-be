@@ -100,8 +100,13 @@ where
 
     pub async fn replace_one(&self, model: &T, id: &ObjectId) -> Result<(), CustomError> {
         let filter = doc! { "_id": id };
+        let mut doc = mongodb::bson::to_document(model)
+            .map_err(|e| CustomError::Database(format!("Failed to serialize model: {}", e)))?;
+        doc.remove("_id");
+
+        let update = doc! { "$set": doc };
         self.collection
-            .replace_one(filter, model)
+            .update_one(filter, update)
             .await
             .map_err(CustomError::MongoError)?;
         Ok(())
