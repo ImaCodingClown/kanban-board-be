@@ -103,7 +103,7 @@ where
         let mut doc = mongodb::bson::to_document(model)
             .map_err(|e| CustomError::Database(format!("Failed to serialize model: {}", e)))?;
         doc.remove("_id");
-        
+
         let update = doc! { "$set": doc };
         self.collection
             .update_one(filter, update)

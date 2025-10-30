@@ -65,11 +65,8 @@ pub async fn create_team(
         .map_err(|e| CustomError::Database(format!("Failed to update user teams: {}", e)))?;
 
     // Create default board for the new team
-    let _default_board = create_board(
-        team_name.clone(),
-        format!("{}'s Board", team_name),
-        db,
-    ).await?;
+    let _default_board =
+        create_board(team_name.clone(), format!("{}'s Board", team_name), db).await?;
 
     Ok(created_team)
 }
