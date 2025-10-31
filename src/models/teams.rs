@@ -25,6 +25,8 @@ pub struct Team {
     pub leader_id: ObjectId,
     pub members: Vec<TeamMember>,
     pub slack_webhook_url: Option<String>,
+    pub next_card_number: Option<u32>,
+    pub card_prefix: Option<String>,
 }
 
 impl Team {
@@ -40,6 +42,13 @@ impl Team {
                 "manage_members".to_string(),
             ],
         };
+        
+        let card_prefix = name
+            .chars()
+            .filter(|c| c.is_alphanumeric())
+            .take(4)
+            .collect::<String>()
+            .to_uppercase();
 
         Team {
             id: None,
@@ -48,6 +57,8 @@ impl Team {
             leader_id,
             members: vec![leader_member],
             slack_webhook_url: None,
+            next_card_number: Some(1),
+            card_prefix: Some(card_prefix),
         }
     }
 
