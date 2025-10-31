@@ -32,12 +32,12 @@ pub fn create_app(state: AppState) -> Router {
         .allow_headers(Any);
 
     Router::new()
-        .merge(auth::routes())
+        .nest("/v1", auth::routes())
         .nest("/v1", board::routes())
         .nest("/v1", cards::routes())
         .nest("/v1", users::routes())
+        .nest("/v1/teams", teams::routes())
         .merge(health::routes())
-        .nest("/teams", teams::routes())
         .layer(cors)
         .with_state(state)
 }
