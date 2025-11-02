@@ -81,6 +81,8 @@ mod tests {
     fn test_board_card_structure() {
         let card = Card {
             id: Some(ObjectId::new()),
+            card_id: Some("TT-1".to_string()),
+            card_number: Some(1),
             board_id: "507f1f77bcf86cd799439012".to_string(),
             title: "Test Card".to_string(),
             description: Some("Test description".to_string()),
