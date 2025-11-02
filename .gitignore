@@ -3,3 +3,4 @@
 .env
 .dotenv
 .vscode
+.DS_Store
