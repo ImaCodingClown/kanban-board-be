@@ -11,41 +11,43 @@ use crate::{
     },
     utils::errors::CustomError,
 };
-use mongodb::bson::{doc, oid::ObjectId}; 
+use mongodb::bson::{doc, oid::ObjectId};
 use mongodb::Client;
 
 pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<Card, CustomError> {
     let mut board = get_board_by_id(payload.board_id.clone(), &app_state.db).await?;
 
     let teams = app_state.db.database("general").collection::<Team>("teams");
-    
+
     let team = teams
         .find_one(doc! {"name": &board.team})
         .await
         .map_err(CustomError::MongoError)?
         .ok_or_else(|| CustomError::NotFound("Team not found".to_string()))?;
-    
+
     let card_prefix = if let Some(prefix) = team.card_prefix {
         prefix
     } else {
         // generate prefix if existing team doesn't have one
-        let prefix = board.team
+        let prefix = board
+            .team
             .chars()
             .filter(|c| c.is_alphanumeric())
             .take(4)
             .collect::<String>()
             .to_uppercase();
-        
-        teams.update_one(
-            doc! {"name": &board.team},
-            doc! {"$set": {"card_prefix": &prefix, "next_card_number": 1}},
-        )
-        .await
-        .map_err(CustomError::MongoError)?;
-        
+
+        teams
+            .update_one(
+                doc! {"name": &board.team},
+                doc! {"$set": {"card_prefix": &prefix, "next_card_number": 1}},
+            )
+            .await
+            .map_err(CustomError::MongoError)?;
+
         prefix
     };
-    
+
     let updated_team = teams
         .find_one_and_update(
             doc! {"name": &board.team},
@@ -54,7 +56,7 @@ pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<C
         .await
         .map_err(CustomError::MongoError)?
         .ok_or_else(|| CustomError::NotFound("Team not found".to_string()))?;
-    
+
     let card_number = updated_team.next_card_number.unwrap_or(1);
     let card_id = format!("{}-{}", card_prefix, card_number);
 

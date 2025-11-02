@@ -53,7 +53,7 @@ pub struct Card {
         serialize_with = "crate::utils::mongo_serializers::opt_oid_to_str"
     )]
     pub id: Option<ObjectId>,
-    pub card_id: Option<String>, 
+    pub card_id: Option<String>,
     pub card_number: Option<u32>,
     pub board_id: String,
     pub title: String,

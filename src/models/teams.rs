@@ -42,7 +42,7 @@ impl Team {
                 "manage_members".to_string(),
             ],
         };
-        
+
         let card_prefix = name
             .chars()
             .filter(|c| c.is_alphanumeric())
