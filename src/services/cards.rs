@@ -183,8 +183,8 @@ pub async fn edit_card(
             .ok_or_else(|| CustomError::NotFound("Card not found".to_string()))?;
 
         card.title = payload.title.clone();
-        card.description = Some(payload.description.clone());
-        card.assignee = Some(payload.assignee.clone());
+        card.description = payload.description.clone();
+        card.assignee = payload.assignee.clone();
         card.story_point = payload.story_point;
         card.priority = payload.priority.clone();
     }
@@ -203,23 +203,25 @@ pub async fn edit_card(
         .and_then(|col| col.cards.iter().find(|c| c.id == Some(card_oid)))
         .ok_or_else(|| CustomError::NotFound("Updated card not found".to_string()))?;
 
-    if old_assignee != Some(payload.assignee.clone()) {
-        let teams = app_state.db.database("general").collection::<Team>("teams");
-        if let Ok(Some(team)) = teams
-            .find_one(mongodb::bson::doc! {"name": &board.team })
-            .await
-        {
-            if let Some(webhook_url) = team.slack_webhook_url {
-                if let Ok(user) = get_user_by_username(&payload.assignee, &app_state.db).await {
-                    if let Some(slack_user_id) = user.slack_user_id {
-                        let payload = SlackNotificationPayload {
-                            slack_user_id,
-                            card_title: payload.title.clone(),
-                            card_description: Some(payload.description.clone()),
-                            priority: payload.priority.clone(),
-                        };
-                        let notifier = SlackWebhookNotifier;
-                        let _ = notifier.send(&webhook_url, payload).await;
+    if old_assignee != payload.assignee {
+        if let Some(assignee) = &payload.assignee {
+            let teams = app_state.db.database("general").collection::<Team>("teams");
+            if let Ok(Some(team)) = teams
+                .find_one(mongodb::bson::doc! {"name": &board.team })
+                .await
+            {
+                if let Some(webhook_url) = team.slack_webhook_url {
+                    if let Ok(user) = get_user_by_username(assignee, &app_state.db).await {
+                        if let Some(slack_user_id) = user.slack_user_id {
+                            let payload = SlackNotificationPayload {
+                                slack_user_id,
+                                card_title: payload.title.clone(),
+                                card_description: payload.description.clone(),
+                                priority: payload.priority.clone(),
+                            };
+                            let notifier = SlackWebhookNotifier;
+                            let _ = notifier.send(&webhook_url, payload).await;
+                        }
                     }
                 }
             }
