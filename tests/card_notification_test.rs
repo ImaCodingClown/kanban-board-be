@@ -62,18 +62,18 @@ mod tests {
         let payload = EditCardPayload {
             card_id: "507f1f77bcf86cd799439011".to_string(),
             title: "Updated Card".to_string(),
-            description: "Updated description".to_string(),
+            description: Some("Updated description".to_string()),
             column_name: "In Progress".to_string(),
             story_point: Some(5),
-            assignee: "newuser".to_string(),
+            assignee: Some("newuser".to_string()),
             board_id: "507f1f77bcf86cd799439012".to_string(),
             priority: Some("Medium".to_string()),
         };
 
         assert_eq!(payload.card_id, "507f1f77bcf86cd799439011");
         assert_eq!(payload.title, "Updated Card");
-        assert_eq!(payload.description, "Updated description");
-        assert_eq!(payload.assignee, "newuser");
+        assert_eq!(payload.description, Some("Updated description".to_string()));
+        assert_eq!(payload.assignee, Some("newuser".to_string()));
         assert_eq!(payload.board_id, "507f1f77bcf86cd799439012");
     }
 

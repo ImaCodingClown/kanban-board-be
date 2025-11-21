@@ -85,10 +85,10 @@ pub struct DeleteCardPayload {
 pub struct EditCardPayload {
     pub card_id: String,
     pub title: String,
-    pub description: String,
+    pub description: Option<String>,
     pub column_name: String,
     pub story_point: Option<u8>,
-    pub assignee: String,
+    pub assignee: Option<String>,
     pub board_id: String,
     pub priority: Option<String>,
 }
