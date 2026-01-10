@@ -20,6 +20,7 @@ pub struct ErrorDetail {
 pub enum CustomError {
     Database(String),
     Authentication(String),
+    Forbidden(String),
     Server(String),
     NotFound(String),
     Conflict(String),
@@ -31,6 +32,7 @@ impl CustomError {
         match self {
             CustomError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
             CustomError::Authentication(_) => StatusCode::UNAUTHORIZED,
+            CustomError::Forbidden(_) => StatusCode::FORBIDDEN,
             CustomError::Server(_) => StatusCode::INTERNAL_SERVER_ERROR,
             CustomError::NotFound(_) => StatusCode::NOT_FOUND,
             CustomError::Conflict(_) => StatusCode::CONFLICT,
@@ -49,6 +51,12 @@ impl CustomError {
             CustomError::Authentication(msg) => (
                 "AUTHENTICATION_ERROR".to_string(),
                 "Invalid email or password".to_string(),
+                Some(msg.clone()),
+                None,
+            ),
+            CustomError::Forbidden(msg) => (
+                "FORBIDDEN".to_string(),
+                "Access denied".to_string(),
                 Some(msg.clone()),
                 None,
             ),
@@ -96,6 +104,7 @@ impl std::fmt::Display for CustomError {
         match self {
             CustomError::Database(msg) => write!(f, "Database error: {}", msg),
             CustomError::Authentication(msg) => write!(f, "Authentication error: {}", msg),
+            CustomError::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
             CustomError::Server(msg) => write!(f, "Server error: {}", msg),
             CustomError::NotFound(msg) => write!(f, "Not found: {}", msg),
             CustomError::Conflict(msg) => write!(f, "Conflict: {}", msg),
