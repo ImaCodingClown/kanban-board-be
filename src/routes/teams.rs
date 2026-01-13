@@ -4,6 +4,7 @@ use crate::models::teams::{
     TeamWithUsernamesResponse, TeamsResponse, UpdateTeamPayload,
 };
 use crate::models::users::User;
+use crate::services::permission::require_team_membership;
 use crate::services::teams::{
     add_member, create_team, delete_team, get_team, get_team_with_usernames, get_user_teams,
     leave_team, remove_member, update_team,
@@ -64,9 +65,19 @@ async fn handle_get_team(
     AuthBearer(user_email): AuthBearer,
     Path(team_name): Path<String>,
 ) -> impl IntoResponse {
+    if let Err(e) = require_team_membership(&state.db, &user_email, &team_name).await {
+        return (
+            e.to_status_code(),
+            Json(TeamResponse {
+                success: false,
+                team: None,
+                message: Some(e.to_string()),
+            }),
+        );
+    }
+
     match get_team(&state.db, &team_name).await {
         Ok(Some(mut team)) => {
-            // Hide webhook for non-leaders
             let users = state.db.database("general").collection::<User>("users");
             if let Ok(Some(user)) = users.find_one(doc! {"email": &user_email}).await {
                 if !team.is_leader(&user.id.unwrap()) {
@@ -251,9 +262,20 @@ async fn handle_delete_team(
 
 async fn handle_get_team_with_usernames(
     State(state): State<AppState>,
-    AuthBearer(_user_email): AuthBearer,
+    AuthBearer(user_email): AuthBearer,
     Path(team_name): Path<String>,
 ) -> impl IntoResponse {
+    if let Err(e) = require_team_membership(&state.db, &user_email, &team_name).await {
+        return (
+            e.to_status_code(),
+            Json(TeamWithUsernamesResponse {
+                success: false,
+                team: None,
+                message: Some(e.to_string()),
+            }),
+        );
+    }
+
     match get_team_with_usernames(&state.db, &team_name).await {
         Ok(Some(team)) => (
             StatusCode::OK,
