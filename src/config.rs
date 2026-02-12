@@ -40,7 +40,7 @@ impl AppState {
 
         match create_performance_indexes(&db).await {
             Ok(_) => tracing::info!("Database indexes created successfully"),
-            Err(e) => tracing::warn!("Warning: Failed to create performance indexes: {}", e),
+            Err(e) => tracing::warn!("Failed to create performance indexes: {}", e),
         }
 
         AppState {

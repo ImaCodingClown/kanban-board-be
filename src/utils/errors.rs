@@ -42,69 +42,48 @@ impl CustomError {
 
     pub fn to_error_response(&self) -> ErrorResponse {
         let (code, message, details, retry_after) = match self {
-            CustomError::Database(msg) => {
-                tracing::error!(status_code = 500, error = %msg, "Database error occurred");
-                (
-                    "DATABASE_ERROR".to_string(),
-                    "Database operation failed".to_string(),
-                    Some(msg.clone()),
-                    None,
-                )
-            }
-            CustomError::Authentication(msg) => {
-                tracing::error!(status_code = 401, error = %msg, "Authentication error occurred");
-                (
-                    "AUTHENTICATION_ERROR".to_string(),
-                    "Invalid email or password".to_string(),
-                    Some(msg.clone()),
-                    None,
-                )
-            }
-            CustomError::Forbidden(msg) => {
-                tracing::error!(status_code = 403, error = %msg, "Forbidden error occurred");
-                (
-                    "FORBIDDEN".to_string(),
-                    "Access denied".to_string(),
-                    Some(msg.clone()),
-                    None,
-                )
-            }
-            CustomError::Server(msg) => {
-                tracing::error!(status_code = 500, error = %msg, "Server error occurred");
-                (
-                    "SERVER_ERROR".to_string(),
-                    "Internal server error".to_string(),
-                    Some(msg.clone()),
-                    None,
-                )
-            }
-            CustomError::NotFound(msg) => {
-                tracing::error!(status_code = 404, error = %msg, "Not found error occurred");
-                (
-                    "NOT_FOUND".to_string(),
-                    "Resource not found".to_string(),
-                    Some(msg.clone()),
-                    None,
-                )
-            }
-            CustomError::Conflict(msg) => {
-                tracing::error!(status_code = 409, error = %msg, "Conflict error occurred");
-                (
-                    "CONFLICT".to_string(),
-                    "Resource conflict".to_string(),
-                    Some(msg.clone()),
-                    None,
-                )
-            }
-            CustomError::MongoError(err) => {
-                tracing::error!(status_code = 500, error = %err, "MongoDB error occurred");
-                (
-                    "DATABASE_ERROR".to_string(),
-                    "Database operation failed".to_string(),
-                    Some(err.to_string()),
-                    None,
-                )
-            }
+            CustomError::Database(msg) => (
+                "DATABASE_ERROR".to_string(),
+                "Database operation failed".to_string(),
+                Some(msg.clone()),
+                None,
+            ),
+            CustomError::Authentication(msg) => (
+                "AUTHENTICATION_ERROR".to_string(),
+                "Invalid email or password".to_string(),
+                Some(msg.clone()),
+                None,
+            ),
+            CustomError::Forbidden(msg) => (
+                "FORBIDDEN".to_string(),
+                "Access denied".to_string(),
+                Some(msg.clone()),
+                None,
+            ),
+            CustomError::Server(msg) => (
+                "SERVER_ERROR".to_string(),
+                "Internal server error".to_string(),
+                Some(msg.clone()),
+                None,
+            ),
+            CustomError::NotFound(msg) => (
+                "NOT_FOUND".to_string(),
+                "Resource not found".to_string(),
+                Some(msg.clone()),
+                None,
+            ),
+            CustomError::Conflict(msg) => (
+                "CONFLICT".to_string(),
+                "Resource conflict".to_string(),
+                Some(msg.clone()),
+                None,
+            ),
+            CustomError::MongoError(err) => (
+                "DATABASE_ERROR".to_string(),
+                "Database operation failed".to_string(),
+                Some(err.to_string()),
+                None,
+            ),
         };
 
         ErrorResponse {
@@ -138,14 +117,12 @@ impl std::error::Error for CustomError {}
 
 impl From<String> for CustomError {
     fn from(err: String) -> Self {
-        tracing::error!(status_code = 500, error = %err, "Server error occurred");
         CustomError::Server(err)
     }
 }
 
 impl From<&str> for CustomError {
     fn from(err: &str) -> Self {
-        tracing::error!(status_code = 500, error = %err, "Server error occurred");
         CustomError::Server(err.to_string())
     }
 }

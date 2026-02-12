@@ -32,9 +32,10 @@ async fn main() -> Result<(), CustomError> {
         loki_url
             .set_password(Some(&password))
             .map_err(|_e| CustomError::Server("Invalid loki credentials".to_string()))?;
+        let environment = std::env::var("ENV").unwrap_or_else(|_| "production".to_string());
         let (loki_layer, task) = tracing_loki::builder()
             .label("service", "kanban-api")?
-            .label("environment", "production")?
+            .label("environment", &environment)?
             .build_url(loki_url)?;
         tokio::spawn(task);
 
