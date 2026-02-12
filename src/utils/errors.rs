@@ -132,3 +132,9 @@ impl From<mongodb::error::Error> for CustomError {
         CustomError::MongoError(err)
     }
 }
+
+impl From<tracing_loki::Error> for CustomError {
+    fn from(err: tracing_loki::Error) -> Self {
+        CustomError::Server(format!("Loki logging error: {}", err))
+    }
+}
