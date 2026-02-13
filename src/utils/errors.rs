@@ -123,12 +123,20 @@ impl From<String> for CustomError {
 
 impl From<&str> for CustomError {
     fn from(err: &str) -> Self {
-        CustomError::Server(err.to_string())
+        CustomError::from(err.to_string())
     }
 }
 
 impl From<mongodb::error::Error> for CustomError {
     fn from(err: mongodb::error::Error) -> Self {
+        tracing::error!(status_code = 500, error = %err, "MongoDB error occurred");
         CustomError::MongoError(err)
+    }
+}
+
+impl From<tracing_loki::Error> for CustomError {
+    fn from(err: tracing_loki::Error) -> Self {
+        tracing::error!(status_code = 500, error = %err, "Loki logging error occurred");
+        CustomError::Server(format!("Loki logging error: {}", err))
     }
 }

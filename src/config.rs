@@ -39,8 +39,8 @@ impl AppState {
         let db = db::mongo::db_client(&db_uri).await;
 
         match create_performance_indexes(&db).await {
-            Ok(_) => println!("Database indexes created successfully"),
-            Err(e) => eprintln!("Warning: Failed to create performance indexes: {}", e),
+            Ok(_) => tracing::info!("Database indexes created successfully"),
+            Err(e) => tracing::warn!("Failed to create performance indexes: {}", e),
         }
 
         AppState {
