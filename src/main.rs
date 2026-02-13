@@ -17,33 +17,49 @@ mod utils;
 async fn main() -> Result<(), CustomError> {
     let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
-        .map_err(|e| CustomError::Server(e.to_string()))?;
+        .map_err(|e| CustomError::from(e.to_string()))?;
+
+    let mut loki_setup_failed = false;
 
     if let (Ok(url), Ok(username), Ok(password)) = (
         std::env::var("LOKI_URL"),
         std::env::var("LOKI_USERNAME"),
         std::env::var("LOKI_PASSWORD"),
     ) {
-        let mut loki_url =
-            tracing_loki::url::Url::parse(&url).map_err(|e| CustomError::Server(e.to_string()))?;
-        loki_url
-            .set_username(&username)
-            .map_err(|_e| CustomError::Server("Invalid loki credentials".to_string()))?;
-        loki_url
-            .set_password(Some(&password))
-            .map_err(|_e| CustomError::Server("Invalid loki credentials".to_string()))?;
-        let environment = std::env::var("ENV").unwrap_or_else(|_| "production".to_string());
-        let (loki_layer, task) = tracing_loki::builder()
-            .label("service", "kanban-api")?
-            .label("environment", &environment)?
-            .build_url(loki_url)?;
-        tokio::spawn(task);
+        let setup_result = (|| -> Result<(), CustomError> {
+            let mut loki_url = tracing_loki::url::Url::parse(&url)
+                .map_err(|e| CustomError::from(e.to_string()))?;
+            loki_url
+                .set_username(&username)
+                .map_err(|_e| CustomError::from("Invalid loki credentials".to_string()))?;
+            loki_url
+                .set_password(Some(&password))
+                .map_err(|_e| CustomError::from("Invalid loki credentials".to_string()))?;
+            let environment = std::env::var("ENV").unwrap_or_else(|_| "production".to_string());
+            let (loki_layer, task) = tracing_loki::builder()
+                .label("service", "kanban-api")?
+                .label("environment", &environment)?
+                .build_url(loki_url)?;
+            tokio::spawn(task);
 
-        tracing_subscriber::registry()
-            .with(env_filter)
-            .with(loki_layer)
-            .init();
-    } else {
+            tracing_subscriber::registry()
+                .with(env_filter.clone())
+                .with(loki_layer)
+                .init();
+            Ok(())
+        })();
+
+        if let Err(err) = setup_result {
+            loki_setup_failed = true;
+            eprintln!("Loki logging setup failed: {err}");
+        }
+    }
+
+    if loki_setup_failed
+        || std::env::var("LOKI_URL").is_err()
+        || std::env::var("LOKI_USERNAME").is_err()
+        || std::env::var("LOKI_PASSWORD").is_err()
+    {
         tracing_subscriber::registry()
             .with(env_filter)
             .with(tracing_subscriber::fmt::layer().json())

@@ -123,7 +123,7 @@ impl From<String> for CustomError {
 
 impl From<&str> for CustomError {
     fn from(err: &str) -> Self {
-        CustomError::Server(err.to_string())
+        CustomError::from(err.to_string())
     }
 }
 
