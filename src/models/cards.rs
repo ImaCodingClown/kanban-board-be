@@ -87,6 +87,7 @@ pub struct EditCardPayload {
     pub title: String,
     pub description: Option<String>,
     pub column_name: String,
+    pub new_column_name: Option<String>,
     pub story_point: Option<u8>,
     pub assignee: Option<String>,
     pub board_id: String,

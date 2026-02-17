@@ -1,5 +1,6 @@
 use axum::Router;
 use config::AppState;
+use dotenvy::dotenv;
 use routes::{auth, board, cards, health, teams, users};
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -15,6 +16,7 @@ mod utils;
 
 #[tokio::main]
 async fn main() -> Result<(), CustomError> {
+    dotenv().ok();
     let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .map_err(|e| CustomError::from(e.to_string()))?;
@@ -50,8 +52,8 @@ async fn main() -> Result<(), CustomError> {
         })();
 
         if let Err(err) = setup_result {
+            tracing::warn!("Failed to set up Loki logging: {}", err);
             loki_setup_failed = true;
-            eprintln!("Loki logging setup failed: {err}");
         }
     }
 
@@ -64,6 +66,7 @@ async fn main() -> Result<(), CustomError> {
             .with(env_filter)
             .with(tracing_subscriber::fmt::layer().json())
             .init();
+        tracing::warn!("Loki logging is not configured. Falling back to console logging.");
     }
     let state = AppState::build().await;
     let app = create_app(state);

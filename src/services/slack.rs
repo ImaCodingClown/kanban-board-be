@@ -12,8 +12,8 @@ pub trait SlackNotifier: Send + Sync {
     async fn send(
         &self,
         webhook_url: &str,
-        payload: SlackNotificationPayload,
-    ) -> Result<(), CustomError>;
+        payload: &SlackNotificationPayload,
+    ) -> Result<(), &CustomError>;
 }
 
 pub struct SlackWebhookNotifier;
@@ -30,12 +30,13 @@ impl SlackNotifier for SlackWebhookNotifier {
     async fn send(
         &self,
         webhook_url: &str,
-        payload: SlackNotificationPayload,
-    ) -> Result<(), CustomError> {
-        let message = self.build_message(&payload);
+        payload: &SlackNotificationPayload,
+    ) -> Result<(), &CustomError> {
+        let message = self.build_message(payload);
         send_notification_with_message(webhook_url, message)
             .await
-            .map_err(|e| CustomError::Server(e.to_string()))
+            .map_err(|e| CustomError::Server(e.to_string()))?;
+        Ok(())
     }
 }
 
@@ -90,12 +91,12 @@ pub fn create_slack_message(
                 {
                     "type": "mrkdwn",
                     "text": format!("*Description:*\n{}",
-                        notification.card_description.as_deref().unwrap_or("No description"))
+                        notification.card_description.unwrap_or("No description"))
                 },
                 {
                     "type": "mrkdwn",
                     "text": format!("*Priority:*\n{}",
-                        notification.priority.as_deref().unwrap_or("Not set"))
+                        notification.priority.unwrap_or("Not set"))
                 }
             ]
         }),
@@ -114,9 +115,9 @@ mod tests {
     fn test_build_message_has_blocks() {
         let payload = SlackNotificationPayload {
             slack_user_id: "U01ABC2DEF3".to_string(),
-            card_title: "Test Card".to_string(),
-            card_description: Some("Test description".to_string()),
-            priority: Some("High".to_string()),
+            card_title: "Test Card",
+            card_description: Some("Test description"),
+            priority: Some("High"),
         };
 
         let message = create_slack_message(payload);

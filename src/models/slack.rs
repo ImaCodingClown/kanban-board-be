@@ -1,9 +1,9 @@
 use serde::Serialize;
 
 #[derive(Debug, Serialize, Clone)]
-pub struct SlackNotificationPayload {
+pub struct SlackNotificationPayload<'a> {
     pub slack_user_id: String,
-    pub card_title: String,
-    pub card_description: Option<String>,
-    pub priority: Option<String>,
+    pub card_title: &'a str,
+    pub card_description: Option<&'a str>,
+    pub priority: Option<&'a str>,
 }
