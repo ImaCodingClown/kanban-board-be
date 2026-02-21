@@ -7,9 +7,9 @@ mod tests {
     fn test_create_slack_message_with_all_fields() {
         let notification = SlackNotificationPayload {
             slack_user_id: "U01ABC2DEF3".to_string(),
-            card_title: "Test Card".to_string(),
-            card_description: Some("Test description".to_string()),
-            priority: Some("High".to_string()),
+            card_title: "Test Card",
+            card_description: Some("Test description"),
+            priority: Some("High"),
         };
 
         let message = create_slack_message(notification);
@@ -42,7 +42,7 @@ mod tests {
     fn test_create_slack_message_with_minimal_fields() {
         let notification = SlackNotificationPayload {
             slack_user_id: "U01XYZ789".to_string(),
-            card_title: "Minimal Card".to_string(),
+            card_title: "Minimal Card",
             card_description: None,
             priority: None,
         };

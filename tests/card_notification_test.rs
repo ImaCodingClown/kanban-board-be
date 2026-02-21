@@ -43,18 +43,15 @@ mod tests {
     fn test_slack_notification_creation() {
         let notification = SlackNotificationPayload {
             slack_user_id: "U01ABC2DEF3".to_string(),
-            card_title: "Test Card".to_string(),
-            card_description: Some("Test description".to_string()),
-            priority: Some("High".to_string()),
+            card_title: "Test Card",
+            card_description: Some("Test description"),
+            priority: Some("High"),
         };
 
         assert_eq!(notification.slack_user_id, "U01ABC2DEF3");
         assert_eq!(notification.card_title, "Test Card");
-        assert_eq!(
-            notification.card_description,
-            Some("Test description".to_string())
-        );
-        assert_eq!(notification.priority, Some("High".to_string()));
+        assert_eq!(notification.card_description, Some("Test description"));
+        assert_eq!(notification.priority, Some("High"));
     }
 
     #[test]
@@ -64,6 +61,7 @@ mod tests {
             title: "Updated Card".to_string(),
             description: Some("Updated description".to_string()),
             column_name: "In Progress".to_string(),
+            new_column_name: None,
             story_point: Some(5),
             assignee: Some("newuser".to_string()),
             board_id: "507f1f77bcf86cd799439012".to_string(),

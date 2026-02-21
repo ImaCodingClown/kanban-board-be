@@ -99,12 +99,12 @@ pub async fn add_card(payload: AddCardPayload, app_state: &AppState) -> Result<C
                     if let Some(slack_user_id) = user.slack_user_id {
                         let payload = SlackNotificationPayload {
                             slack_user_id,
-                            card_title: payload.title,
-                            card_description: payload.description,
-                            priority: payload.priority,
+                            card_title: &payload.title,
+                            card_description: payload.description.as_deref(),
+                            priority: payload.priority.as_deref(),
                         };
                         let notifier = SlackWebhookNotifier;
-                        let _ = notifier.send(&webhook_url, payload).await;
+                        let _ = notifier.send(&webhook_url, &payload).await;
                     }
                 }
             }
@@ -150,43 +150,40 @@ pub async fn edit_card(
 ) -> Result<Card, CustomError> {
     let mut board = get_board_by_id(payload.board_id.clone(), &app_state.db).await?;
 
-    let card_oid = ObjectId::parse_str(&payload.card_id)
-        .map_err(|_| CustomError::NotFound("Invalid card ID".to_string()))?;
+    let card_oid = ObjectId::parse_str(&payload.card_id)?;
 
-    let old_assignee = {
-        let column = board
-            .columns
-            .iter()
-            .find(|col| col.title == payload.column_name)
-            .ok_or_else(|| CustomError::NotFound("Column not found".to_string()))?;
+    let mut card = board
+        .columns
+        .iter_mut()
+        .find(|col| col.title == payload.column_name)
+        .and_then(|col| {
+            Some(
+                col.cards
+                    .remove(col.cards.iter().position(|c| c.id == Some(card_oid))?),
+            )
+        })
+        .ok_or_else(|| CustomError::NotFound("Card not found".to_string()))?;
 
-        let card = column
-            .cards
-            .iter()
-            .find(|card| card.id == Some(card_oid))
-            .ok_or_else(|| CustomError::NotFound("Card not found".to_string()))?;
+    let old_assignee = card.assignee;
 
-        card.assignee.clone()
+    card.title = payload.title;
+    card.description = payload.description;
+    card.assignee = payload.assignee;
+    card.story_point = payload.story_point;
+    card.priority = payload.priority;
+
+    let column_name = if let Some(new_column_name) = &payload.new_column_name {
+        new_column_name
+    } else {
+        &payload.column_name
     };
 
+    if let Some(col) = board
+        .columns
+        .iter_mut()
+        .find(|col| &col.title == column_name)
     {
-        let column = board
-            .columns
-            .iter_mut()
-            .find(|col| col.title == payload.column_name)
-            .ok_or_else(|| CustomError::NotFound("Column not found".to_string()))?;
-
-        let card = column
-            .cards
-            .iter_mut()
-            .find(|card| card.id == Some(card_oid))
-            .ok_or_else(|| CustomError::NotFound("Card not found".to_string()))?;
-
-        card.title = payload.title.clone();
-        card.description = payload.description.clone();
-        card.assignee = payload.assignee.clone();
-        card.story_point = payload.story_point;
-        card.priority = payload.priority.clone();
+        col.cards.push(card)
     }
 
     let board_service = ODM::<Board>::build(&app_state.db).await;
@@ -198,13 +195,13 @@ pub async fn edit_card(
 
     let edited_card = board
         .columns
-        .iter()
-        .find(|col| col.title == payload.column_name)
-        .and_then(|col| col.cards.iter().find(|c| c.id == Some(card_oid)))
+        .into_iter()
+        .find(|col| &col.title == column_name)
+        .and_then(|col| col.cards.into_iter().find(|c| c.id == Some(card_oid)))
         .ok_or_else(|| CustomError::NotFound("Updated card not found".to_string()))?;
 
-    if old_assignee != payload.assignee {
-        if let Some(assignee) = &payload.assignee {
+    if old_assignee != edited_card.assignee {
+        if let Some(assignee) = &edited_card.assignee {
             let teams = app_state.db.database("general").collection::<Team>("teams");
             if let Ok(Some(team)) = teams
                 .find_one(mongodb::bson::doc! {"name": &board.team })
@@ -215,12 +212,12 @@ pub async fn edit_card(
                         if let Some(slack_user_id) = user.slack_user_id {
                             let payload = SlackNotificationPayload {
                                 slack_user_id,
-                                card_title: payload.title.clone(),
-                                card_description: payload.description.clone(),
-                                priority: payload.priority.clone(),
+                                card_title: &edited_card.title,
+                                card_description: edited_card.description.as_deref(),
+                                priority: edited_card.priority.as_deref(),
                             };
                             let notifier = SlackWebhookNotifier;
-                            let _ = notifier.send(&webhook_url, payload).await;
+                            let _ = notifier.send(&webhook_url, &payload).await;
                         }
                     }
                 }
@@ -228,5 +225,5 @@ pub async fn edit_card(
         }
     }
 
-    Ok(edited_card.clone())
+    Ok(edited_card)
 }

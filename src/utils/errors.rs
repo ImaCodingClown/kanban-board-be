@@ -1,5 +1,6 @@
 use axum::http::StatusCode;
 use serde::Serialize;
+use thiserror::Error;
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
@@ -16,15 +17,24 @@ pub struct ErrorDetail {
     pub retry_after: Option<u64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum CustomError {
+    #[error("Database error: {0}")]
     Database(String),
+    #[error("Authentication error: {0}")]
     Authentication(String),
+    #[error("Forbidden: {0}")]
     Forbidden(String),
+    #[error("Server error: {0}")]
     Server(String),
+    #[error("Not found: {0}")]
     NotFound(String),
+    #[error("Conflict: {0}")]
     Conflict(String),
-    MongoError(mongodb::error::Error),
+    #[error("MongoDB error: {0}")]
+    MongoError(#[from] mongodb::error::Error),
+    #[error("ObjectId parsing error: {0}")]
+    OIDParseError(#[from] mongodb::bson::oid::Error),
 }
 
 impl CustomError {
@@ -37,6 +47,7 @@ impl CustomError {
             CustomError::NotFound(_) => StatusCode::NOT_FOUND,
             CustomError::Conflict(_) => StatusCode::CONFLICT,
             CustomError::MongoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            CustomError::OIDParseError(_) => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -84,6 +95,12 @@ impl CustomError {
                 Some(err.to_string()),
                 None,
             ),
+            CustomError::OIDParseError(err) => (
+                "INVALID_ID".to_string(),
+                "Invalid ID format".to_string(),
+                Some(err.to_string()),
+                None,
+            ),
         };
 
         ErrorResponse {
@@ -99,22 +116,6 @@ impl CustomError {
     }
 }
 
-impl std::fmt::Display for CustomError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CustomError::Database(msg) => write!(f, "Database error: {}", msg),
-            CustomError::Authentication(msg) => write!(f, "Authentication error: {}", msg),
-            CustomError::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
-            CustomError::Server(msg) => write!(f, "Server error: {}", msg),
-            CustomError::NotFound(msg) => write!(f, "Not found: {}", msg),
-            CustomError::Conflict(msg) => write!(f, "Conflict: {}", msg),
-            CustomError::MongoError(err) => write!(f, "MongoDB error: {}", err),
-        }
-    }
-}
-
-impl std::error::Error for CustomError {}
-
 impl From<String> for CustomError {
     fn from(err: String) -> Self {
         CustomError::Server(err)
@@ -127,16 +128,15 @@ impl From<&str> for CustomError {
     }
 }
 
-impl From<mongodb::error::Error> for CustomError {
-    fn from(err: mongodb::error::Error) -> Self {
-        tracing::error!(status_code = 500, error = %err, "MongoDB error occurred");
-        CustomError::MongoError(err)
-    }
-}
-
 impl From<tracing_loki::Error> for CustomError {
     fn from(err: tracing_loki::Error) -> Self {
         tracing::error!(status_code = 500, error = %err, "Loki logging error occurred");
         CustomError::Server(format!("Loki logging error: {}", err))
+    }
+}
+
+impl From<CustomError> for &CustomError {
+    fn from(err: CustomError) -> Self {
+        Box::leak(Box::new(err))
     }
 }
