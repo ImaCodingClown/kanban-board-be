@@ -20,13 +20,18 @@ use mongodb::{
     Client,
 };
 
+// Database constants to avoid hard-coding
+const DATABASE_NAME: &str = "general";
+const USERS_COLLECTION: &str = "users";
+const COMPANIES_COLLECTION: &str = "companies";
+
 pub async fn create_company(
     db: &Client,
     email: &str,
     payload: CreateCompanyPayload,
 ) -> Result<Company, CustomError> {
-    let users = db.database("general").collection::<User>("users");
-    let companies = db.database("general").collection::<Company>("teams");
+    let users = db.database(DATABASE_NAME).collection::<User>(USERS_COLLECTION);
+    let companies = db.database(DATABASE_NAME).collection::<Company>(COMPANIES_COLLECTION);
 
     let user = users
         .find_one(doc! { "email": email })
@@ -35,11 +40,7 @@ pub async fn create_company(
 
     let user = user.ok_or_else(|| CustomError::NotFound("User not found".to_string()))?;
 
-    if user.username.to_lowercase() != "tony" {
-        return Err(CustomError::Authentication(
-            "Only Tony can create companies".to_string(),
-        ));
-    }
+    let user_id = user.id.ok_or_else(|| CustomError::Database("User ID not found".to_string()))?;
 
     let existing_company = companies
         .find_one(doc! { "name": &payload.name })
@@ -53,7 +54,7 @@ pub async fn create_company(
     }
 
     let company_name = payload.name.clone();
-    let company = Company::new(payload.name, payload.description, user.id.unwrap());
+    let company = Company::new(payload.name, payload.description, user_id);
 
     let result = companies
         .insert_one(&company)
@@ -61,7 +62,7 @@ pub async fn create_company(
         .map_err(|e| CustomError::Database(format!("Failed to create company: {}", e)))?;
 
     let mut created_company = company;
-    created_company.id = Some(result.inserted_id.as_object_id().unwrap());
+    created_company.id = result.inserted_id.as_object_id();
 
     let mut user_groups = user.group;
     user_groups.push(company_name);
@@ -78,7 +79,7 @@ pub async fn create_company(
 }
 
 pub async fn get_company(db: &Client, company_id: &str) -> Result<Option<Company>, CustomError> {
-    let companies = db.database("general").collection::<Company>("teams");
+    let companies = db.database(DATABASE_NAME).collection::<Company>(COMPANIES_COLLECTION);
 
     let company_oid = ObjectId::parse_str(company_id)
         .map_err(|_| CustomError::NotFound("Invalid company ID".to_string()))?;
@@ -92,8 +93,8 @@ pub async fn get_company(db: &Client, company_id: &str) -> Result<Option<Company
 }
 
 pub async fn get_user_companies(db: &Client, email: &str) -> Result<Vec<Company>, CustomError> {
-    let users = db.database("general").collection::<User>("users");
-    let companies = db.database("general").collection::<Company>("teams");
+    let users = db.database(DATABASE_NAME).collection::<User>(USERS_COLLECTION);
+    let companies = db.database(DATABASE_NAME).collection::<Company>(COMPANIES_COLLECTION);
 
     let user = users
         .find_one(doc! { "email": email })
@@ -101,6 +102,8 @@ pub async fn get_user_companies(db: &Client, email: &str) -> Result<Vec<Company>
         .map_err(|e| CustomError::Database(format!("Failed to find user: {}", e)))?;
 
     let user = user.ok_or_else(|| CustomError::NotFound("User not found".to_string()))?;
+
+    let user_id = user.id.ok_or_else(|| CustomError::Database("User ID not found".to_string()))?;
 
     let mut user_companies = Vec::new();
 
@@ -128,7 +131,7 @@ pub async fn get_user_companies(db: &Client, email: &str) -> Result<Vec<Company>
         .map_err(|e| CustomError::Database(format!("Failed to collect companies: {}", e)))?;
 
     for company in all_companies {
-        if company.is_member(&user.id.unwrap())
+        if company.is_member(&user_id)
             && !user_companies.iter().any(|c| c.id == company.id)
         {
             user_companies.push(company);
@@ -144,8 +147,8 @@ pub async fn update_company(
     company_id: &str,
     payload: UpdateCompanyPayload,
 ) -> Result<Company, CustomError> {
-    let users = db.database("general").collection::<User>("users");
-    let companies = db.database("general").collection::<Company>("teams");
+    let users = db.database(DATABASE_NAME).collection::<User>(USERS_COLLECTION);
+    let companies = db.database(DATABASE_NAME).collection::<Company>(COMPANIES_COLLECTION);
 
     let user = users
         .find_one(doc! { "email": email })
@@ -153,6 +156,8 @@ pub async fn update_company(
         .map_err(|e| CustomError::Database(format!("Failed to find user: {}", e)))?;
 
     let user = user.ok_or_else(|| CustomError::NotFound("User not found".to_string()))?;
+
+    let user_id = user.id.ok_or_else(|| CustomError::Database("User ID not found".to_string()))?;
 
     let company_oid = ObjectId::parse_str(company_id)
         .map_err(|_| CustomError::NotFound("Invalid company ID".to_string()))?;
@@ -163,7 +168,7 @@ pub async fn update_company(
         .map_err(|e| CustomError::Database(format!("Failed to find company: {}", e)))?
         .ok_or_else(|| CustomError::NotFound("Company not found".to_string()))?;
 
-    if !company.is_owner(&user.id.unwrap()) && user.username.to_lowercase() != "tony" {
+    if !company.is_owner(&user_id) {
         return Err(CustomError::Authentication(
             "Only company owner can update company".to_string(),
         ));
@@ -203,8 +208,8 @@ pub async fn get_company_with_usernames(
     db: &Client,
     company_id: &str,
 ) -> Result<CompanyWithUsernames, CustomError> {
-    let companies = db.database("general").collection::<Company>("teams");
-    let users = db.database("general").collection::<User>("users");
+    let companies = db.database(DATABASE_NAME).collection::<Company>(COMPANIES_COLLECTION);
+    let users = db.database(DATABASE_NAME).collection::<User>(USERS_COLLECTION);
 
     let company_oid = ObjectId::parse_str(company_id)
         .map_err(|_| CustomError::NotFound("Invalid company ID".to_string()))?;
@@ -258,8 +263,8 @@ pub async fn add_member(
     company_id: &str,
     user_id: &str,
 ) -> Result<Company, CustomError> {
-    let users = db.database("general").collection::<User>("users");
-    let companies = db.database("general").collection::<Company>("teams");
+    let users = db.database(DATABASE_NAME).collection::<User>(USERS_COLLECTION);
+    let companies = db.database(DATABASE_NAME).collection::<Company>(COMPANIES_COLLECTION);
 
     let requester = users
         .find_one(doc! { "email": email })
@@ -268,6 +273,8 @@ pub async fn add_member(
 
     let requester =
         requester.ok_or_else(|| CustomError::NotFound("Requester not found".to_string()))?;
+
+    let requester_id = requester.id.ok_or_else(|| CustomError::Database("Requester ID not found".to_string()))?;
 
     let company_oid = ObjectId::parse_str(company_id)
         .map_err(|_| CustomError::NotFound("Invalid company ID".to_string()))?;
@@ -278,7 +285,7 @@ pub async fn add_member(
         .map_err(|e| CustomError::Database(format!("Failed to find company: {}", e)))?
         .ok_or_else(|| CustomError::NotFound("Company not found".to_string()))?;
 
-    if !company.is_owner(&requester.id.unwrap()) && requester.username.to_lowercase() != "tony" {
+    if !company.is_owner(&requester_id) {
         return Err(CustomError::Authentication(
             "Only company owner can add members".to_string(),
         ));
@@ -301,14 +308,14 @@ pub async fn add_member(
 
     company.add_member(new_member_id);
 
-    let mut user_groups = new_member.teams;
+    let mut user_groups = new_member.group;
     if !user_groups.contains(&company.name) {
         user_groups.push(company.name.clone());
 
         let _update_result = users
             .update_one(
                 doc! { "_id": new_member_id },
-                doc! { "$set": { "teams": &user_groups } },
+                doc! { "$set": { "group": &user_groups } },
             )
             .await
             .map_err(|e| CustomError::Database(format!("Failed to update user groups: {}", e)))?;
@@ -329,8 +336,8 @@ pub async fn remove_member(
     company_id: &str,
     user_id: &str,
 ) -> Result<Company, CustomError> {
-    let users = db.database("general").collection::<User>("users");
-    let companies = db.database("general").collection::<Company>("teams");
+    let users = db.database(DATABASE_NAME).collection::<User>(USERS_COLLECTION);
+    let companies = db.database(DATABASE_NAME).collection::<Company>(COMPANIES_COLLECTION);
 
     let requester = users
         .find_one(doc! { "email": email })
@@ -339,6 +346,8 @@ pub async fn remove_member(
 
     let requester =
         requester.ok_or_else(|| CustomError::NotFound("Requester not found".to_string()))?;
+
+    let requester_id = requester.id.ok_or_else(|| CustomError::Database("Requester ID not found".to_string()))?;
 
     let company_oid = ObjectId::parse_str(company_id)
         .map_err(|_| CustomError::NotFound("Invalid company ID".to_string()))?;
@@ -349,7 +358,7 @@ pub async fn remove_member(
         .map_err(|e| CustomError::Database(format!("Failed to find company: {}", e)))?
         .ok_or_else(|| CustomError::NotFound("Company not found".to_string()))?;
 
-    if !company.is_owner(&requester.id.unwrap()) && requester.username.to_lowercase() != "tony" {
+    if !company.is_owner(&requester_id) {
         return Err(CustomError::Authentication(
             "Only company owner can remove members".to_string(),
         ));
@@ -378,13 +387,13 @@ pub async fn remove_member(
         .map_err(|e| CustomError::Database(format!("Failed to find user: {}", e)))?
         .ok_or_else(|| CustomError::NotFound("User not found".to_string()))?;
 
-    let mut user_groups = member_user.teams;
-    user_groups.retain(|t| t != &company.name);
+    let mut user_groups = member_user.group;
+    user_groups.retain(|g| g != &company.name);
 
     let _update_result = users
         .update_one(
             doc! { "_id": member_id },
-            doc! { "$set": { "teams": &user_groups } },
+            doc! { "$set": { "group": &user_groups } },
         )
         .await
         .map_err(|e| CustomError::Database(format!("Failed to update user groups: {}", e)))?;
@@ -399,8 +408,8 @@ pub async fn remove_member(
 }
 
 pub async fn delete_company(db: &Client, email: &str, company_id: &str) -> Result<(), CustomError> {
-    let users = db.database("general").collection::<User>("users");
-    let companies = db.database("general").collection::<Company>("teams");
+    let users = db.database(DATABASE_NAME).collection::<User>(USERS_COLLECTION);
+    let companies = db.database(DATABASE_NAME).collection::<Company>(COMPANIES_COLLECTION);
 
     let user = users
         .find_one(doc! { "email": email })
@@ -408,6 +417,8 @@ pub async fn delete_company(db: &Client, email: &str, company_id: &str) -> Resul
         .map_err(|e| CustomError::Database(format!("Failed to find user: {}", e)))?;
 
     let user = user.ok_or_else(|| CustomError::NotFound("User not found".to_string()))?;
+
+    let user_id = user.id.ok_or_else(|| CustomError::Database("User ID not found".to_string()))?;
 
     let company_oid = ObjectId::parse_str(company_id)
         .map_err(|_| CustomError::NotFound("Invalid company ID".to_string()))?;
@@ -418,7 +429,7 @@ pub async fn delete_company(db: &Client, email: &str, company_id: &str) -> Resul
         .map_err(|e| CustomError::Database(format!("Failed to find company: {}", e)))?
         .ok_or_else(|| CustomError::NotFound("Company not found".to_string()))?;
 
-    if !company.is_owner(&user.id.unwrap()) && user.username.to_lowercase() != "tony" {
+    if !company.is_owner(&user_id) {
         return Err(CustomError::Authentication(
             "Only company owner can delete company".to_string(),
         ));

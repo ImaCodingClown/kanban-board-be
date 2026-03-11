@@ -5,7 +5,7 @@ pub mod teams;
 pub mod users;
 
 use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use mongodb::bson::oid::ObjectId;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
@@ -54,12 +54,12 @@ impl Company {
             description,
             leader_id,
             members: vec![owner_member],
-            created_at: chrono::Utc::now().to_rfc3339(),  
+            created_at: chrono::Utc::now().to_rfc3339(),
             updated_at: chrono::Utc::now().to_rfc3339(),
             is_active: true,
-            slack_webhook_url: None,  
-            next_card_number: None,   
-            card_prefix: None   
+            slack_webhook_url: None,
+            next_card_number: None,
+            card_prefix: None,
         }
     }
 
