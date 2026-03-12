@@ -93,7 +93,7 @@ pub fn create_app(state: AppState) -> Router {
         .nest("/v1", cards::routes())
         .nest("/v1", users::routes())
         .nest("/v1/teams", teams::routes())
-        .nest("/v1", company::routes()) 
+        .nest("/v1", company::routes())
         .merge(health::routes())
         .layer(cors)
         .with_state(state)

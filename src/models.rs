@@ -4,9 +4,9 @@ pub mod slack;
 pub mod teams;
 pub mod users;
 
-use serde::{Deserialize, Serialize};
 use chrono::Utc;
 use mongodb::bson::oid::ObjectId;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum CompanyRole {

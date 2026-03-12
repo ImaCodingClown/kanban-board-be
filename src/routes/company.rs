@@ -1,6 +1,6 @@
 use crate::config::AppState;
 use crate::models::{
-    AddMemberPayload, CompanyResponse, CompanyWithUsernamesResponse, CompaniesResponse,
+    AddMemberPayload, CompaniesResponse, CompanyResponse, CompanyWithUsernamesResponse,
     CreateCompanyPayload, RemoveMemberPayload, UpdateCompanyPayload,
 };
 use crate::services::{
@@ -28,7 +28,10 @@ pub fn routes() -> Router<AppState> {
             get(handle_get_company_with_usernames),
         )
         .route("/companies/{company_id}/members", post(handle_add_member))
-        .route("/companies/{company_id}/members", delete(handle_remove_member))
+        .route(
+            "/companies/{company_id}/members",
+            delete(handle_remove_member),
+        )
 }
 
 async fn handle_create_company(
