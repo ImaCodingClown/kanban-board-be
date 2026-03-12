@@ -4,7 +4,6 @@ pub mod slack;
 pub mod teams;
 pub mod users;
 
-use chrono::Utc;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
