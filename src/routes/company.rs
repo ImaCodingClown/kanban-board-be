@@ -1,9 +1,9 @@
 use crate::config::AppState;
-use crate::models::{
+use crate::models::company::{
     AddMemberPayload, CompaniesResponse, CompanyResponse, CompanyWithUsernamesResponse,
     CreateCompanyPayload, RemoveMemberPayload, UpdateCompanyPayload,
 };
-use crate::services::{
+use crate::services::company::{
     add_member, create_company, delete_company, get_company, get_company_with_usernames,
     get_user_companies, remove_member, update_company,
 };
