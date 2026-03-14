@@ -4,9 +4,3 @@ pub mod company;
 pub mod slack;
 pub mod teams;
 pub mod users;
-
-pub use company::{
-    AddMemberPayload, CompaniesResponse, Company, CompanyMember, CompanyMemberWithUsername,
-    CompanyResponse, CompanyRole, CompanyWithUsernames, CompanyWithUsernamesResponse,
-    CreateCompanyPayload, RemoveMemberPayload, UpdateCompanyPayload,
-};
