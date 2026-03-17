@@ -1,7 +1,7 @@
 use axum::Router;
 use config::AppState;
 use dotenvy::dotenv;
-use routes::{auth, board, cards, health, teams, users};
+use routes::{auth, board, cards, company, health, teams, users};
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
@@ -93,6 +93,7 @@ pub fn create_app(state: AppState) -> Router {
         .nest("/v1", cards::routes())
         .nest("/v1", users::routes())
         .nest("/v1/teams", teams::routes())
+        .nest("/v1", company::routes())
         .merge(health::routes())
         .layer(cors)
         .with_state(state)
