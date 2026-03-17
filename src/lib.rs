@@ -5,6 +5,8 @@ pub mod routes;
 pub mod services;
 pub mod utils;
 
+pub use utils::macros::*;
+
 use axum::Router;
 use config::AppState;
 use routes::{auth, board, health};

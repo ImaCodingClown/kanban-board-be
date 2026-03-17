@@ -16,6 +16,7 @@ pub struct User {
     pub group: Vec<String>,
     pub permissions: Vec<String>,
     pub teams: Vec<String>,
+    pub slack_user_id: Option<String>,
 }
 
 impl User {
@@ -33,6 +34,42 @@ impl User {
             group: Vec::new(),
             permissions: Vec::new(),
             teams,
+            slack_user_id: None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct UserPublic {
+    pub id: String,
+    pub username: String,
+    pub email: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub is_active: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UsersResponse {
+    pub success: bool,
+    pub users: Vec<UserPublic>,
+    pub message: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UpdateSlackIdPayload {
+    pub slack_user_id: String,
+}
+
+impl From<User> for UserPublic {
+    fn from(user: User) -> Self {
+        UserPublic {
+            id: user.id.unwrap().to_hex(),
+            username: user.username,
+            email: Some(user.email),
+            created_at: chrono::Utc::now().to_rfc3339(),
+            updated_at: chrono::Utc::now().to_rfc3339(),
+            is_active: true,
         }
     }
 }

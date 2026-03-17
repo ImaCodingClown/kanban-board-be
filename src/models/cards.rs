@@ -7,29 +7,26 @@ use crate::{
 };
 
 #[serde_with::skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Board {
-    #[serde(rename = "_id")]
+    #[serde(
+        rename = "_id",
+        serialize_with = "crate::utils::mongo_serializers::opt_oid_to_str"
+    )]
     pub id: Option<ObjectId>,
     pub team: String,
+    pub board_name: String,
     pub iteration: Option<String>,
     pub columns: Vec<Column>,
 }
 
 impl Board {
-    pub fn new(team: String) -> Self {
+    pub fn create_default(team: String, board_name: String) -> Self {
         Self {
             id: None,
             team,
-            iteration: None,
-            columns: Vec::new(),
-        }
-    }
-    pub fn create_default(team: String) -> Self {
-        Self {
-            id: None,
-            team,
-            iteration: None,
+            board_name: board_name.clone(),
+            iteration: Some(board_name),
             columns: vec![
                 Column {
                     title: "To Do".to_string(),
@@ -48,16 +45,17 @@ impl Board {
     }
 }
 
-#[derive(Deserialize)]
-pub struct GetTeamPayload {
-    pub team: String,
-}
-
 #[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Card {
-    #[serde(rename = "_id")]
+    #[serde(
+        rename = "_id",
+        serialize_with = "crate::utils::mongo_serializers::opt_oid_to_str"
+    )]
     pub id: Option<ObjectId>,
+    pub card_id: Option<String>,
+    pub card_number: Option<u32>,
+    pub board_id: String,
     pub title: String,
     pub description: Option<String>,
     pub assignee: Option<String>,
@@ -70,10 +68,33 @@ pub struct AddCardPayload {
     pub title: String,
     pub description: Option<String>,
     pub column_name: String,
-    pub team: String,
+    pub story_point: Option<u8>,
+    pub assignee: Option<String>,
+    pub board_id: String,
+    pub priority: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Deserialize, Debug)]
+pub struct DeleteCardPayload {
+    pub card_id: String,
+    pub column_name: String,
+    pub board_id: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct EditCardPayload {
+    pub card_id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub column_name: String,
+    pub new_column_name: Option<String>,
+    pub story_point: Option<u8>,
+    pub assignee: Option<String>,
+    pub board_id: String,
+    pub priority: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Column {
     pub title: String,
     pub cards: Vec<Card>,
@@ -84,10 +105,15 @@ pub struct TeamQuery {
     pub team: String,
 }
 
+#[derive(Deserialize)]
+pub struct BoardIdQuery {
+    pub board_id: String,
+}
+
 impl_mongo!(Board, "boards", "general");
 
 impl MongoModel for Board {
     fn unique_query(&self) -> Document {
-        doc! { "id": &self.id }
+        doc! { "_id": &self.id }
     }
 }

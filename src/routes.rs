@@ -1,4 +1,7 @@
 pub mod auth;
 pub mod board;
-pub mod health;
 pub mod cards;
+pub mod company;
+pub mod health;
+pub mod teams;
+pub mod users;
